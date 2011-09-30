@@ -124,7 +124,6 @@ class calendar_plugin_row_node extends views_plugin_row {
       '#default_value' => $this->options['colors']['taxonomy_field'],
       '#description' => t("Select the taxonomy term field to use when setting stripe colors."),
       '#options' => $vocab_field_options,
-      '#element_validate' => array('calendar_validate_hex_color'),
       '#dependency' => array('edit-row-options-colors-legend' => array('taxonomy')),
       );
     if (empty($vocab_field_options)) {
@@ -146,7 +145,7 @@ class calendar_plugin_row_node extends views_plugin_row {
       '#options' => $options,
       '#description' => t('Select vocabularies to use for setting calendar legend colors by taxonomy term. This works best for vocabularies with only a limited number of possible terms.'),
       '#dependency' => array('edit-row-options-colors-legend' => array('taxonomy')),
-      '#access' => !empty($field_options),
+      '#access' => !empty($vocab_field_options),
     );
 
     $vocabularies = (array) $this->options['colors']['calendar_colors_vocabulary'];
@@ -160,10 +159,9 @@ class calendar_plugin_row_node extends views_plugin_row {
           '#default_value' => isset($term_colors[$term->tid]) ? $term_colors[$term->tid] : '#ffffff',
           '#size' => 7,
           '#maxlength' => 7,
-          '#access' => !empty($field_options),
+          '#access' => !empty($vocab_field_options),
           '#dependency' => array('edit-row-options-colors-legend' => array('taxonomy')),
           '#element_validate' => array('calendar_validate_hex_color'),
-          '#dependency' => array('edit-row-options-colors-legend' => array('type')),
           '#prefix' => '<div class="calendar-colorpicker-wrapper">',
           '#suffix' => '<div class="calendar-colorpicker"></div></div>',
           '#attributes' => array('class' => array('edit-calendar-colorpicker')),
@@ -179,16 +177,15 @@ class calendar_plugin_row_node extends views_plugin_row {
       }
     }
     if (module_exists('og')) {
-      $colors_group = $this->option['colors']['calendar_colors_group'];
-      $groups = og_all_groups_options();
-      foreach ($groups as $gid => $group_name){
+      $colors_group = $this->options['colors']['calendar_colors_group'];
+      $groups = og_get_all_group();
+      foreach ($groups as $gid){
         $form['colors']['calendar_colors_group'][$gid] = array(
-  	      '#title' => t($group_name),
+  	      '#title' => t(og_label($gid)),
   	      '#type' => 'textfield',
   	      '#default_value' => isset($colors_group[$gid]) ? $colors_group[$gid] : '#ffffff',
           '#dependency' => array('edit-row-options-colors-legend' => array('group')),
           '#element_validate' => array('calendar_validate_hex_color'),
-          '#dependency' => array('edit-row-options-colors-legend' => array('type')),
           '#prefix' => '<div class="calendar-colorpicker-wrapper">',
           '#suffix' => '<div class="calendar-colorpicker"></div></div>',
           '#attributes' => array('class' => array('edit-calendar-colorpicker')),
@@ -203,6 +200,14 @@ class calendar_plugin_row_node extends views_plugin_row {
   	    );
   	  }  
     }  
+  }
+
+  function options_submit(&$form, &$form_state) {
+    parent::options_submit($form, $form_state);
+    if (!empty($form_state['values']['row_options']['calendar_date_link'])) {
+      $path = $this->view->display_handler->get_option('path');
+      variable_set('calendar_date_link_' . $form_state['values']['row_options']['calendar_date_link'], $path);
+    }
   }
 
   function pre_render($values) {
@@ -224,6 +229,9 @@ class calendar_plugin_row_node extends views_plugin_row {
     if (!empty($nids)) {
       $this->nodes = node_load_multiple($nids);
     }
+
+    // Let the style know if a link to create a new date is required.
+    $this->view->date_info->calendar_date_link = $this->options['calendar_date_link'];
 
     // Identify the date argument and fields that apply to this view.
     // Preload the Date Views field info for each field, keyed by the
@@ -283,11 +291,11 @@ class calendar_plugin_row_node extends views_plugin_row {
       $tz_handling = $info['tz_handling'];
       $tz_field    = $info['timezone_field'];
       $rrule_field = $info['rrule_field'];
-      $is_field = substr($info['real_field_name'], 0, 6) == 'field_';
+      $is_field    =  $info['is_field'];
      
       // Retrieve the field value that matched our query from the cached node.
       // Find the date and set it to the right timezone.  
-          
+   
       $item = $node->$field_name;
       $node->date_id = array();
       $item_start_date = NULL;
@@ -493,7 +501,7 @@ class calendar_plugin_row_node extends views_plugin_row {
    */
   
   function calendar_node_taxonomy_stripe(&$event) {
-    $term_colors = isset($this->options['colors']['term_colors']) ? $this->options['colors']['term_colors'] : array();
+    $term_colors = isset($this->options['colors']['calendar_colors_taxonomy']) ? $this->options['colors']['calendar_colors_taxonomy'] : array();
     if (empty($term_colors)) {
       return;
     }
@@ -549,11 +557,10 @@ class calendar_plugin_row_node extends views_plugin_row {
     if (empty($colors_group)) {
       return;
     }
-    if (!function_exists('og_get_node_groups')) {
+    if (!function_exists('og_get_entity_groups')) {
       return;
     }
-  
-    $groups_for_node = og_get_node_groups($node);
+    $groups_for_node = og_get_entity_groups('node', $node);
     if(!(isset($node->stripe))){
       $node->stripe = array();
       $node->stripe_label = array();

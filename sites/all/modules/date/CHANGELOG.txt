@@ -5,6 +5,27 @@ Date Module 7.x
 Version 7.x-2.x-dev
 ===================
 
+Notes:
+The date repeat widgets have been removed to keep users from trying to change repeating dates into non-repeating dates.
+There are now just three widgets, Date Select, Date Text, and Date Popup. Whether or not a date is a repeating date
+is now controlled by a field setting.
+
+New Features/UX Changes/API Changes
+
+- Issue #1266144 by arlinsandbulte: Clarify Default End Date Setting
+- Issue #1261478 by stevector and KarenS, Reconfigure the back/next buttons into item lists so Views ajax pager works right.
+- Issue #1262960, Add a new module to work with the Context module to set a condition based on the value of a date field.
+- Issue #1216878, Re-introduce 'repeat' as a field setting rather than a widget type so people can't try to switch back and forth between repeating and non-repeating dates. Eliminate repeat widgets.
+
+Bugfixes
+
+- Tweak date_pager_url to allow a way to create non-absolute urls.
+- Make sure deleted displays won't create errors in Views by returning FALSE in date_forbid() if there is no date argument.
+- Issue #1257830, Beef up the logic when creating the date repeat tabs to work for more kinds of entities.
+- Issue #1260962, Repeating date fields should save the date even if there is no repeat information.
+- Issue #1241836 by kzoli, Fix undefined cardinality indexes.
+- Issue #1233722, Fix undefined index notice in pager when other filters are used.
+
 ======================
 Version 7.x-2.0-alpha4
 ======================

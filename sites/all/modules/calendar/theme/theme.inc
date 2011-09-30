@@ -5,7 +5,12 @@
  * Theme functions for the Calendar module.
  */
 /**
- * Add calendar links above the pager.
+ * Implements hook_preprocess_date_views_pager().
+ *
+ * Creates a calendar_links array which is stored in the session and used
+ * in calendar_menu_local_tasks_alter() to display the links as action items and dynamic tabs.
+ * The links can be altered or deleted using hook_calendar_links_alter().
+ *
  */
 function calendar_preprocess_date_views_pager(&$vars) {
   $view = $vars['plugin']->view;
@@ -13,7 +18,7 @@ function calendar_preprocess_date_views_pager(&$vars) {
     return;
   }
   $options = $view->style_options;
-
+  
   // If we're not on a view with a path (a page), no links are needed.
   $current_path = !empty($view->display_handler->options['path']) ? $view->display_handler->options['path'] : '';
   if (empty($current_path)) {
@@ -21,46 +26,45 @@ function calendar_preprocess_date_views_pager(&$vars) {
   }
 
   // Find all the displays in this view that use the calendar style and have a path and create links to each.
-  $calendar_links = array();
+  $calendar_links[$current_path] = array();
   $base = array('attributes' => array('rel' => 'nofollow'));
   foreach($view->display as $id => $display) {
+    // Check for !empty() in case the view is not fully formed or has displays that are marked to be deleted.
+    if (!empty($display->deleted) || empty($display->display_options['style_plugin'])) {
+      continue;
+    }
     if ($display->display_options['style_plugin'] == 'calendar_style' && !empty($display->display_options['path'])) {
       $path = $display->display_options['path'];
       $title = $display->display_title;
-      // @TODO Why is this sometimes empty for a style that uses the default value?
       $type = !empty($display->display_options['style_options']['calendar_type']) ? $display->display_options['style_options']['calendar_type'] : 'month';
 
       // Make sure the links to other calendar displays use the right path for that display.
       // Get rid of pager links when swapping between displays to force the base argument 
       // to be structured correctly for the type of display. This means you can't use
       // these links in a block or panel.
-      $href = str_replace($current_path, $path, date_pager_url($view, $type, NULL, TRUE));
+      $href = str_replace($current_path, $path, date_pager_url($view, $type, NULL, TRUE, FALSE));
+      $part_path = str_replace(base_path(), '', $href);
 
       // Once we have a path for the links to other displays, add it to our links array.
-      $calendar_links['calendar calendar-'. $type] = array('title' => $title, 'href' => $href);
+      $calendar_links[$current_path]['tabs'][$type] = array('title' => $title, 'path' => $part_path);
+      $calendar_links[$current_path]['types'][] = $type;
     }
   }
 
   // If an 'Add new ... link is provided, add it here.
-  // the query will bring the user back here after adding the node.
-  if (!empty($view->date_info->calendar_date_link) 
+  if (!empty($view->date_info->calendar_date_link) && !empty($view->date_info->url)
   && (user_access("administer nodes") || user_access('create '. $view->date_info->calendar_date_link .' content'))) {
     $name = node_type_get_name($view->date_info->calendar_date_link);
     $href = 'node/add/' . str_replace('_', '-', $view->date_info->calendar_date_link);
-    $query = drupal_get_query_parameters(array('destination' => $view->date_info->url));    
-    $calendar_links['calendar calendar-add'] = $base + array(
-      'title' => t('Add+'), 
-      'href' => $href, 
-      'query' => $query,
-      );
+    $calendar_links[$current_path]['actions'][] = array('title' => t('Add @name', array('@name' => $name)), 'path' => $href);
   }
 
-  // Append the calendar links above the pager.
-  $links = array(
-    'links' => $calendar_links, 
-    'attributes' => array('class' => array('calendar-links', 'inline')),
-  );
-  $vars['pager_prefix'] = theme('links', $links);
+  // Pass this through drupal_alter() so it can be adjusted in custom code or in the theme.
+  drupal_alter('calendar_links', $calendar_links);
+
+  // Add the value to the session so it can be used to create the tabs.
+  $_SESSION['calendar_links'][$current_path] = $calendar_links[$current_path];
+
 }
 
 /**
@@ -195,14 +199,13 @@ function template_preprocess_calendar_day_overlap(&$vars) {
  * Display a day view.
  */
 function template_preprocess_calendar_day(&$vars) {
-
   $vars['view']->style_with_weekno = FALSE;
   $view = $vars['view'];
   $rows = $vars['rows'];
 
   $item_count = 0;
   $by_hour_count = 0;
-  $grouping_field = $view->date_info->style_groupby_field;
+  $grouping_field = !empty($view->date_info->style_groupby_field) ? ($view->date_info->style_groupby_field - 1) : NULL;
   $display_overlap = !empty($view->date_info->style_theme_style) && !empty($view->date_info->style_groupby_times);
 
   // Add optional css
@@ -230,9 +233,9 @@ function template_preprocess_calendar_day(&$vars) {
   // Move all_day items into the right columns and render them.
   $grouped_items = array();
   foreach ($rows['all_day'] as $item) {
-    if (isset($item->{$grouping_field})) {
-      $column = $item->{$grouping_field};        
-      $item->{$grouping_field} = ''; // Remove the grouping field from the results.
+    if (!empty($item->rendered_fields[$grouping_field])) {
+      $column = $item->rendered_fields[$grouping_field];        
+      unset($item->rendered_fields[$grouping_field]); // Remove the grouping field from the results.
       if (!in_array($column, $columns)) {
         $columns[] = $column;
       }
@@ -256,9 +259,9 @@ function template_preprocess_calendar_day(&$vars) {
   foreach ($rows['items'] as &$items) {
     foreach ($items as &$item) {
       $time = date_format($item->calendar_start_date, 'H:i:s');
-      if (isset($item->{$grouping_field})) {
-        $column = $item->{$grouping_field};
-        $item->{$grouping_field} = ''; // Remove the grouping field from the results.
+      if (!empty($item->rendered_fields[$grouping_field])) {
+        $column = $item->rendered_fields[$grouping_field];
+        unset($item->rendered_fields[$grouping_field]); // Remove the grouping field from the results.
         if (!in_array($column, $columns)) {
           $columns[] = $column;
         }

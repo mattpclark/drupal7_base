@@ -5,9 +5,41 @@ Calendar Module 7.x
 Version 7.x-3.x-dev
 ===================
 
+NOTES:
+The links at the top of the calendar page have been reworked into tabs. They will not show up
+until you clear the caches. Use hook_calendar_links_alter() to alter the links or the titles 
+or to empty the links array if you don't want to see them.
+
+- Issue #1235180 by marleythedog, Fix broken taxonomy stripe handling in calendar row plugin.
+- Issue #704068, Add OG stripe option to calendar row plugin.
+- Issue #1265590, Fix syntax error in calendar-style-ical.tpl.php.
+- Issue #1265616, Rework the calendar display links into tabs and the Add link into an action item, and add hook_calendar_links_alter().
+- Add static to calendar_granularity_path() to speed up processing.
+- Issue #1264974 by hdcwebteam, Fix parse error in latest ical.
+- Issue #1261478 by stevector and KarenS, Reconfigure the back/next buttons into item lists so Views ajax pager works right.
+- Issue #1238568, Add more checks to bail gracefully when a date argument is missing.
+- Issue #1254932 by larsdesigns, Invalid CSS Property in calendar_multiday.css
+- Issue #1254922 by larsdesigns, calendar_multiday.css is not complient with Drupal Coding Standards
+- Issue #1254920 by larsdesigns, calendar.css is not complient with Drupal Coding Standards
+- Issue #1254916 by larsdesigns, calendar-overlap.css is not complient with Drupal Coding Standards
 
 Starting new branch with a total rework of Calendar, using a Views pager plugin for the back/next navigation, 
 a row plugin to explode the view results into calendar day items, and a style plugin to disply the results in a calendar.
+
+======================
+Version 7.x-3.0-alpha2
+======================
+
+- Add update hook to remove old style calendar legend blocks from system.
+- Issue #742146, Add option to remove X-WR-CALNAME if VEVENT is not a feed.
+- Add option to change method from PUBLISH to REQUEST in VCALENDAR.
+- Issue #1087798 by anj, Fix X-WR-CALNAME in VCALENDAR.
+- Add new 'is_field' flag to tell when we're working with a Field field.
+- Issue #1232258 Fix the option to group items by a field value in the day view.
+- The Link back to the calendar on the date node got lost in the latest rework. Add it back.
+- The Add+ link got lost when we switched to using a row plugin. Add it back.
+- Fix typo in ical path, it should be .ics, not .cal.
+- Fix master calendar display, it was missing the contextual filter.
 
 ======================
 Version 7.x-3.0-alpha1

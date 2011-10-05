@@ -65,6 +65,7 @@ function text_field_schema($field) {
     ),
   );
 }
+<<<<<<< HEAD
 
 /**
  * Change text field 'format' columns into varchar.
@@ -93,3 +94,5 @@ function text_update_7000() {
     db_change_field($revision_table, $column, $column, $spec);
   }
 }
+=======
+>>>>>>> drupalorg

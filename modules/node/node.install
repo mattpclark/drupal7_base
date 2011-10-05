@@ -444,6 +444,7 @@ function node_install() {
 }
 
 /**
+<<<<<<< HEAD
  * Implements hook_update_dependencies().
  */
 function node_update_dependencies() {
@@ -468,23 +469,30 @@ function node_update_dependencies() {
 }
 
 /**
+=======
+>>>>>>> drupalorg
  * Utility function: fetch the node types directly from the database.
  *
- * This function is valid for a database schema version 7000.
- *
- * @ingroup update-api-6.x-to-7.x
+ * @ingroup update-api-7.x-to-8.x
  */
 function _update_7000_node_get_types() {
   $node_types = db_query('SELECT * FROM {node_type}')->fetchAllAssoc('type', PDO::FETCH_OBJ);
 
+<<<<<<< HEAD
   // Create default settings for orphan nodes.
+=======
+  // Create default settings for orphaned nodes.
+>>>>>>> drupalorg
   $all_types = db_query('SELECT DISTINCT type FROM {node}')->fetchCol();
   $extra_types = array_diff($all_types, array_keys($node_types));
 
   foreach ($extra_types as $type) {
     $type_object = new stdClass();
     $type_object->type = $type;
+<<<<<<< HEAD
 
+=======
+>>>>>>> drupalorg
     // In Drupal 6, whether you have a body field or not is a flag in the node
     // type table. If it's enabled, nodes may or may not have an empty string
     // for the bodies. As we can't detect what this setting should be in
@@ -493,6 +501,7 @@ function _update_7000_node_get_types() {
     $type_object->has_body = 1;
     $type_object->body_label = 'Body';
     $node_types[$type_object->type] = $type_object;
+<<<<<<< HEAD
   }
   return $node_types;
 }
@@ -796,8 +805,12 @@ function node_update_7008() {
   $roles = user_roles(FALSE, 'administer nodes');
   foreach ($roles as $rid => $role) {
     _update_7000_user_role_grant_permissions($rid, array('access content overview'), 'node');
+=======
+>>>>>>> drupalorg
   }
+  return $node_types;
 }
+<<<<<<< HEAD
 
 /**
  * Convert node languages from the empty string to LANGUAGE_NONE.
@@ -902,3 +915,5 @@ function node_update_7012() {
 /**
  * @} End of "addtogroup updates-6.x-to-7.x"
  */
+=======
+>>>>>>> drupalorg

@@ -87,6 +87,7 @@ function contact_uninstall() {
   variable_del('contact_threshold_limit');
   variable_del('contact_threshold_window');
 }
+<<<<<<< HEAD
 
 /**
  * Implements hook_update_dependencies().
@@ -166,3 +167,5 @@ function contact_update_7003() {
 /**
  * @} End of "addtogroup updates-6.x-to-7.x"
  */
+=======
+>>>>>>> drupalorg

@@ -6,7 +6,7 @@
  *
  * When enabled, the Drupal comment module creates a discussion
  * board for each Drupal node. Users can post comments to discuss
- * a forum topic, weblog post, story, collaborative book page, etc.
+ * a forum topic, story, collaborative book page, etc.
  */
 
 /**
@@ -92,7 +92,7 @@ function comment_help($path, $arg) {
  * Implements hook_entity_info().
  */
 function comment_entity_info() {
-  $return =  array(
+  $return = array(
     'comment' => array(
       'label' => t('Comment'),
       'base table' => 'comment',
@@ -118,6 +118,9 @@ function comment_entity_info() {
   foreach (node_type_get_names() as $type => $name) {
     $return['comment']['bundles']['comment_node_' . $type] = array(
       'label' => t('@node_type comment', array('@node_type' => $name)),
+      // Provide the node type/bundle name for other modules, so it does not
+      // have to be extracted manually from the bundle name.
+      'node bundle' => $type,
       'admin' => array(
         // Place the Field UI paths for comments one level below the
         // corresponding paths for nodes, so that they appear in the same set
@@ -542,7 +545,7 @@ function comment_new_page_count($num_comments, $new_replies, $node) {
   elseif ($flat) {
     // Flat comments.
     $count = $num_comments - $new_replies;
-    $pageno =  $count / $comments_per_page;
+    $pageno = $count / $comments_per_page;
   }
   else {
     // Threaded comments: we build a query with a subquery to find the first
@@ -575,7 +578,7 @@ function comment_new_page_count($num_comments, $new_replies, $node) {
       ':thread' => $first_thread,
     ))->fetchField();
 
-    $pageno =  $count / $comments_per_page;
+    $pageno = $count / $comments_per_page;
   }
 
   if ($pageno >= 1) {
@@ -655,7 +658,7 @@ function comment_node_view($node, $view_mode) {
           );
         }
         else {
-          $links['comment_forbidden'] = array(
+          $links['comment-forbidden'] = array(
             'title' => theme('comment_post_forbidden', array('node' => $node)),
             'html' => TRUE,
           );
@@ -685,7 +688,7 @@ function comment_node_view($node, $view_mode) {
           }
         }
         else {
-          $links['comment_forbidden'] = array(
+          $links['comment-forbidden'] = array(
             'title' => theme('comment_post_forbidden', array('node' => $node)),
             'html' => TRUE,
           );
@@ -1066,8 +1069,8 @@ function comment_links($comment, $node) {
       );
     }
     else {
-      $links['comment_forbidden']['title'] = theme('comment_post_forbidden', array('node' => $node));
-      $links['comment_forbidden']['html'] = TRUE;
+      $links['comment-forbidden']['title'] = theme('comment_post_forbidden', array('node' => $node));
+      $links['comment-forbidden']['html'] = TRUE;
     }
   }
   return $links;
@@ -1433,13 +1436,15 @@ function comment_access($op, $comment) {
  *
  * @param $comment
  *   A comment object.
+ *
+ * @see comment_int_to_alphadecimal()
  */
 function comment_save($comment) {
   global $user;
 
   $transaction = db_transaction();
   try {
-    $defaults =  array(
+    $defaults = array(
       'mail' => '',
       'homepage' => '',
       'name' => '',
@@ -1497,7 +1502,7 @@ function comment_save($comment) {
         // Strip the "/" from the end of the thread.
         $max = rtrim($max, '/');
         // Finally, build the thread field for this new comment.
-        $thread = int2vancode(vancode2int($max) + 1) . '/';
+        $thread = comment_increment_alphadecimal($max) . '/';
       }
       else {
         // This is a comment with a parent comment, so increase the part of the
@@ -1515,7 +1520,7 @@ function comment_save($comment) {
 
         if ($max == '') {
           // First child of this parent.
-          $thread = $parent->thread . '.' . int2vancode(0) . '/';
+          $thread = $parent->thread . '.' . comment_int_to_alphadecimal(0) . '/';
         }
         else {
           // Strip the "/" at the end of the thread.
@@ -1525,7 +1530,7 @@ function comment_save($comment) {
           $parent_depth = count(explode('.', $parent->thread));
           $last = $parts[$parent_depth];
           // Finally, build the thread field for this new comment.
-          $thread = $parent->thread . '.' . int2vancode(vancode2int($last) + 1) . '/';
+          $thread = $parent->thread . '.' . comment_increment_alphadecimal($last) . '/';
         }
       }
 
@@ -1633,6 +1638,9 @@ function comment_delete_multiple($cids) {
  *   values those fields must have. Instead, it is preferable to use
  *   EntityFieldQuery to retrieve a list of entity IDs loadable by
  *   this function.
+ * @param $reset
+ *   Whether to reset the internal static entity cache. Note that the static
+ *   cache is disabled in comment_entity_info() by default.
  *
  * @return
  *   An array of comment objects, indexed by comment ID.
@@ -1642,8 +1650,8 @@ function comment_delete_multiple($cids) {
  *
  * @todo Remove $conditions in Drupal 8.
  */
-function comment_load_multiple($cids = array(), $conditions = array()) {
-  return entity_load('comment', $cids, $conditions);
+function comment_load_multiple($cids = array(), $conditions = array(), $reset = FALSE) {
+  return entity_load('comment', $cids, $conditions, $reset);
 }
 
 /**
@@ -1651,11 +1659,15 @@ function comment_load_multiple($cids = array(), $conditions = array()) {
  *
  * @param $cid
  *   The identifying comment id.
+ * @param $reset
+ *   Whether to reset the internal static entity cache. Note that the static
+ *   cache is disabled in comment_entity_info() by default.
+ *
  * @return
  *   The comment object.
  */
-function comment_load($cid) {
-  $comment = comment_load_multiple(array($cid));
+function comment_load($cid, $reset = FALSE) {
+  $comment = comment_load_multiple(array($cid), array(), $reset);
   return $comment ? $comment[$cid] : FALSE;
 }
 
@@ -1711,7 +1723,7 @@ function comment_num_new($nid, $timestamp = 0) {
     $timestamp = ($timestamp > NODE_NEW_LIMIT ? $timestamp : NODE_NEW_LIMIT);
 
     // Use the timestamp to retrieve the number of new comments.
-    return db_query('SELECT COUNT(cid) FROM {comment} WHERE nid = :nid  AND created > :timestamp AND status = :status', array(
+    return db_query('SELECT COUNT(cid) FROM {comment} WHERE nid = :nid AND created > :timestamp AND status = :status', array(
       ':nid' => $nid,
       ':timestamp' => $timestamp,
       ':status' => COMMENT_PUBLISHED,
@@ -1757,7 +1769,7 @@ function comment_get_display_ordinal($cid, $node_type) {
   }
   else {
     // For threaded comments, the c.thread column is used for ordering. We can
-    // use the vancode for comparison, but must remove the trailing slash.
+    // use the sorting code for comparison, but must remove the trailing slash.
     // See comment_view_multiple().
     $query->where('SUBSTRING(c1.thread, 1, (LENGTH(c1.thread) -1)) < SUBSTRING(c2.thread, 1, (LENGTH(c2.thread) -1))');
   }
@@ -2279,13 +2291,13 @@ function template_preprocess_comment(&$variables) {
 
   // Set status to a string representation of comment->status.
   if (isset($comment->in_preview)) {
-    $variables['status']  = 'comment-preview';
+    $variables['status'] = 'comment-preview';
   }
   else {
-    $variables['status']  = ($comment->status == COMMENT_NOT_PUBLISHED) ? 'comment-unpublished' : 'comment-published';
+    $variables['status'] = ($comment->status == COMMENT_NOT_PUBLISHED) ? 'comment-unpublished' : 'comment-published';
   }
   // Gather comment classes.
-  if ($comment->uid === 0) {
+  if ($comment->uid == 0) {
     $variables['classes_array'][] = 'comment-by-anonymous';
   }
   else {
@@ -2443,11 +2455,11 @@ function _comment_update_node_statistics($nid) {
 }
 
 /**
- * Generate vancode.
+ * Generate sorting code.
  *
  * Consists of a leading character indicating length, followed by N digits
- * with a numerical value in base 36. Vancodes can be sorted as strings
- * without messing up numerical order.
+ * with a numerical value in base 36 (alphadecimal). These codes can be sorted
+ * as strings without altering numerical order.
  *
  * It goes:
  * 00, 01, 02, ..., 0y, 0z,
@@ -2455,7 +2467,7 @@ function _comment_update_node_statistics($nid) {
  * 2100, 2101, ..., 2zzy, 2zzz,
  * 31000, 31001, ...
  */
-function int2vancode($i = 0) {
+function comment_int_to_alphadecimal($i = 0) {
   $num = base_convert((int) $i, 10, 36);
   $length = strlen($num);
 
@@ -2463,10 +2475,21 @@ function int2vancode($i = 0) {
 }
 
 /**
- * Decode vancode back to an integer.
+ * Decode sorting code back to an integer.
+ *
+ * @see comment_int_to_alphadecimal()
  */
-function vancode2int($c = '00') {
+function comment_alphadecimal_to_int($c = '00') {
   return base_convert(substr($c, 1), 36, 10);
+}
+
+/**
+ * Increment a sorting code to the next value.
+ *
+ * @see comment_int_to_alphadecimal()
+ */
+function comment_increment_alphadecimal($c = '00') {
+  return comment_int_to_alphadecimal(comment_alphadecimal_to_int($c) + 1);
 }
 
 /**

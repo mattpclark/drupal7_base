@@ -272,10 +272,10 @@ function node_admin_paths() {
  * Gathers a listing of links to nodes.
  *
  * @param $result
- *   A DB result object from a query to fetch node entities. If your query
- *   joins the <code>node_comment_statistics</code> table so that the
- *   <code>comment_count</code> field is available, a title attribute will
- *   be added to show the number of comments.
+ *   A database result object from a query to fetch node entities. If your
+ *   query joins the {node_comment_statistics} table so that the comment_count
+ *   field is available, a title attribute will be added to show the number of
+ *   comments.
  * @param $title
  *   A heading for the resulting list.
  *
@@ -675,7 +675,7 @@ function _node_types_build($rebuild = FALSE) {
     if (isset($_node_types)) {
       return $_node_types;
     }
-    if ($cache = cache_get($cid)) {
+    if ($cache = cache()->get($cid)) {
       $_node_types = $cache->data;
       return $_node_types;
     }
@@ -737,7 +737,7 @@ function _node_types_build($rebuild = FALSE) {
 
   asort($_node_types->names);
 
-  cache_set($cid, $_node_types);
+  cache()->set($cid, $_node_types);
 
   return $_node_types;
 }
@@ -746,7 +746,7 @@ function _node_types_build($rebuild = FALSE) {
  * Clears the node type cache.
  */
 function node_type_cache_reset() {
-  cache_clear_all('node_types:', 'cache', TRUE);
+  cache()->deletePrefix('node_types:');
   drupal_static_reset('_node_types_build');
 }
 
@@ -1073,7 +1073,7 @@ function node_save($node) {
         $node->log = '';
       }
     }
-    elseif (empty($node->log)) {
+    elseif (!isset($node->log) || $node->log === '') {
       // If we are updating an existing node without adding a new revision, we
       // need to make sure $node->log is unset whenever it is empty. As long as
       // $node->log is unset, drupal_write_record() will not attempt to update
@@ -1319,8 +1319,8 @@ function node_view($node, $view_mode = 'full', $langcode = NULL) {
  * Drupal core defines the following view modes for nodes, with the following
  * default use cases:
  *   - full (default): node is being displayed on its own page (node/123)
- *   - teaser: node is being displayed on the default home page listing, on
- *     taxonomy listing pages, or on blog listing pages.
+ *   - teaser: node is being displayed on the default home page listing, or on
+ *     taxonomy listing pages.
  *   - rss: node displayed in an RSS feed.
  *   If search.module is enabled:
  *   - search_index: node is being indexed for search.
@@ -2124,16 +2124,21 @@ function node_block_view($delta = '') {
   switch ($delta) {
     case 'syndicate':
       $block['subject'] = t('Syndicate');
-      $block['content'] = theme('feed_icon', array('url' => 'rss.xml', 'title' => t('Syndicate')));
+      $block['content'] = array(
+        '#theme' => 'feed_icon',
+        '#url' => 'rss.xml',
+        '#title' => t('Syndicate'),
+      );
       break;
 
     case 'recent':
       if (user_access('access content')) {
         $block['subject'] = t('Recent content');
         if ($nodes = node_get_recent(variable_get('node_recent_block_count', 10))) {
-          $block['content'] = theme('node_recent_block', array(
-            'nodes' => $nodes,
-          ));
+          $block['content'] = array(
+            '#theme' => 'node_recent_block',
+            '#nodes' => $nodes,
+          );
         } else {
           $block['content'] = t('No content available.');
         }
@@ -2447,7 +2452,7 @@ function node_feed($nids = FALSE, $channel = array()) {
     $nids = db_select('node', 'n')
       ->fields('n', array('nid', 'created'))
       ->condition('n.promote', 1)
-      ->condition('status', 1)
+      ->condition('n.status', 1)
       ->orderBy('n.created', 'DESC')
       ->range(0, variable_get('feed_default_items', 10))
       ->addTag('node_access')
@@ -2828,8 +2833,6 @@ function node_search_validate($form, &$form_state) {
  *   TRUE if the operation may be performed, FALSE otherwise.
  */
 function node_access($op, $node, $account = NULL) {
-  global $user;
-
   $rights = &drupal_static(__FUNCTION__, array());
 
   if (!$node || !in_array($op, array('view', 'update', 'delete', 'create'), TRUE)) {
@@ -2839,7 +2842,7 @@ function node_access($op, $node, $account = NULL) {
   }
   // If no user object is supplied, the access check is for the current user.
   if (empty($account)) {
-    $account = $user;
+    $account = $GLOBALS['user'];
   }
 
   // $node may be either an object or a node type. Since node types cannot be
@@ -3340,7 +3343,7 @@ function node_access_acquire_grants($node, $delete = TRUE) {
     $grants = array_shift($grant_by_priority);
   }
 
-  node_access_write_grants($node, $grants, NULL, $delete);
+  _node_access_write_grants($node, $grants, NULL, $delete);
 }
 
 /**
@@ -3369,7 +3372,7 @@ function node_access_acquire_grants($node, $delete = TRUE) {
  *   If false, do not delete records. This is only for optimization purposes,
  *   and assumes the caller has already performed a mass delete of some form.
  */
-function node_access_write_grants($node, $grants, $realm = NULL, $delete = TRUE) {
+function _node_access_write_grants($node, $grants, $realm = NULL, $delete = TRUE) {
   if ($delete) {
     $query = db_delete('node_access')->condition('nid', $node->nid);
     if ($realm) {
@@ -3942,4 +3945,15 @@ function node_file_download_access($field, $entity_type, $entity) {
   if ($entity_type == 'node') {
     return node_access('view', $entity);
   }
+}
+
+/**
+ * Implements hook_locale_language_delete().
+ */
+function node_locale_language_delete($language) {
+  // On nodes with this language, unset the language
+  db_update('node')
+    ->fields(array('language' => ''))
+    ->condition('language', $language->language)
+    ->execute();
 }

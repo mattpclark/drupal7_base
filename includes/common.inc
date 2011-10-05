@@ -626,14 +626,15 @@ function drupal_encode_path($path) {
  * This issues an on-site HTTP redirect. The function makes sure the redirected
  * URL is formatted correctly.
  *
- * Usually the redirected URL is constructed from this function's input
- * parameters. However you may override that behavior by setting a
- * destination in either the $_REQUEST-array (i.e. by using
- * the query string of an URI) This is used to direct the user back to
- * the proper page after completing a form. For example, after editing
- * a post on the 'admin/content'-page or after having logged on using the
- * 'user login'-block in a sidebar. The function drupal_get_destination()
- * can be used to help set the destination URL.
+ * If a destination was specified in the current request's URI (i.e.,
+ * $_GET['destination']) then it will override the $path and $options values
+ * passed to this function. This provides the flexibility to build a link to
+ * user/login and override the default redirection so that the user is
+ * redirected to a specific path after logging in:
+ * @code
+ *   $query = array('destination' => "node/$node->nid");
+ *   $link = l(t('Log in'), 'user/login', array('query' => $query));
+ * @endcode
  *
  * Drupal will ensure that messages set by drupal_set_message() and other
  * session data are written to the database before the user is redirected.
@@ -860,7 +861,7 @@ function drupal_http_request($url, array $options = array()) {
 
   // If the server URL has a user then attempt to use basic authentication.
   if (isset($uri['user'])) {
-    $options['headers']['Authorization'] = 'Basic ' . base64_encode($uri['user'] . (!empty($uri['pass']) ? ":" . $uri['pass'] : ''));
+    $options['headers']['Authorization'] = 'Basic ' . base64_encode($uri['user'] . (isset($uri['pass']) ? ':' . $uri['pass'] : ''));
   }
 
   // If the database prefix is being used by SimpleTest to run the tests in a copied
@@ -2196,8 +2197,9 @@ function url($path = NULL, array $options = array()) {
  */
 function url_is_external($path) {
   $colonpos = strpos($path, ':');
-  // Only call the slow drupal_strip_dangerous_protocols() if $path contains a
-  // ':' before any / ? or #.
+  // Avoid calling drupal_strip_dangerous_protocols() if there is any
+  // slash (/), hash (#) or question_mark (?) before the colon (:)
+  // occurrence - if any - as this would clearly mean it is not a URL.
   return $colonpos !== FALSE && !preg_match('![/?#]!', substr($path, 0, $colonpos)) && drupal_strip_dangerous_protocols($path) == $path;
 }
 
@@ -2475,6 +2477,9 @@ function drupal_deliver_html_page($page_callback_result) {
 
         watchdog('page not found', check_plain($_GET['q']), NULL, WATCHDOG_WARNING);
 
+        // Check for and return a fast 404 page if configured.
+        drupal_fast_404();
+
         // Keep old path for reference, and to allow forms to redirect to it.
         if (!isset($_GET['destination'])) {
           $_GET['destination'] = $_GET['q'];
@@ -2491,7 +2496,7 @@ function drupal_deliver_html_page($page_callback_result) {
         if (empty($return) || $return == MENU_NOT_FOUND || $return == MENU_ACCESS_DENIED) {
           // Standard 404 handler.
           drupal_set_title(t('Page not found'));
-          $return = t('The requested page could not be found.');
+          $return = t('The requested page "@path" could not be found.', array('@path' => request_uri()));
         }
 
         drupal_set_page_content($return);
@@ -3015,7 +3020,7 @@ function drupal_sort_css_js($a, $b) {
  * are always groupable, and items of the 'external' type are never groupable.
  * This function also ensures that the process of grouping items does not change
  * their relative order. This requirement may result in multiple groups for the
- * same type, media, and browsers, if needed to accomodate other items in
+ * same type, media, and browsers, if needed to accommodate other items in
  * between.
  *
  * @param $css
@@ -4496,8 +4501,8 @@ function drupal_process_states(&$elements) {
  *   its dependencies could not be added.
  *
  * @see drupal_get_library()
- * @see hook_library()
- * @see hook_library_alter()
+ * @see hook_library_info()
+ * @see hook_library_info_alter()
  */
 function drupal_add_library($module, $name, $every_page = NULL) {
   $added = &drupal_static(__FUNCTION__, array());
@@ -4547,8 +4552,8 @@ function drupal_add_library($module, $name, $every_page = NULL) {
  *   of libraries registered by $module is returned (which may be empty).
  *
  * @see drupal_add_library()
- * @see hook_library()
- * @see hook_library_alter()
+ * @see hook_library_info()
+ * @see hook_library_info_alter()
  *
  * @todo The purpose of drupal_get_*() is completely different to other page
  *   requisite API functions; find and use a different name.
@@ -4558,12 +4563,12 @@ function drupal_get_library($module, $name = NULL) {
 
   if (!isset($libraries[$module])) {
     // Retrieve all libraries associated with the module.
-    $module_libraries = module_invoke($module, 'library');
+    $module_libraries = module_invoke($module, 'library_info');
     if (empty($module_libraries)) {
       $module_libraries = array();
     }
     // Allow modules to alter the module's registered libraries.
-    drupal_alter('library', $module_libraries, $module);
+    drupal_alter('library_info', $module_libraries, $module);
 
     foreach ($module_libraries as $key => $data) {
       if (is_array($data)) {
@@ -4991,7 +4996,7 @@ function drupal_page_set_cache() {
       if (variable_get('page_compression', TRUE) && extension_loaded('zlib')) {
         $cache->data['body'] = gzencode($cache->data['body'], 9, FORCE_GZIP);
       }
-      cache_set($cache->cid, $cache->data, 'cache_page', $cache->expire);
+      cache('page')->set($cache->cid, $cache->data, $cache->expire);
     }
     return $cache;
   }
@@ -5812,7 +5817,7 @@ function drupal_render_cache_get($elements) {
   }
   $bin = isset($elements['#cache']['bin']) ? $elements['#cache']['bin'] : 'cache';
 
-  if (!empty($cid) && $cache = cache_get($cid, $bin)) {
+  if (!empty($cid) && $cache = cache($bin)->get($cid)) {
     // Add additional libraries, JavaScript, CSS and other data attached
     // to this element.
     if (isset($cache->data['#attached'])) {
@@ -5857,7 +5862,7 @@ function drupal_render_cache_set(&$markup, $elements) {
   }
   $bin = isset($elements['#cache']['bin']) ? $elements['#cache']['bin'] : 'cache';
   $expire = isset($elements['#cache']['expire']) ? $elements['#cache']['expire'] : CACHE_PERMANENT;
-  cache_set($cid, $data, $bin, $expire);
+  cache($bin)->set($cid, $data, $expire);
 }
 
 /**
@@ -6140,9 +6145,16 @@ function element_children(&$elements, $sort = FALSE) {
   $sortable = FALSE;
   foreach ($elements as $key => $value) {
     if ($key === '' || $key[0] !== '#') {
-      $children[$key] = $value;
-      if (is_array($value) && isset($value['#weight'])) {
-        $sortable = TRUE;
+      if (is_array($value)) {
+        $children[$key] = $value;
+        if (isset($value['#weight'])) {
+          $sortable = TRUE;
+        }
+      }
+      // Only trigger an error if the value is not null.
+      // @see http://drupal.org/node/1283892
+      elseif (isset($value)) {
+        trigger_error(t('"@key" is an invalid render array key', array('@key' => $key)), E_USER_ERROR);
       }
     }
   }
@@ -6163,7 +6175,7 @@ function element_children(&$elements, $sort = FALSE) {
 }
 
 /**
- * Return the visibile children of an element.
+ * Returns the visible children of an element.
  *
  * @param $elements
  *   The parent element.
@@ -6454,7 +6466,7 @@ function drupal_common_theme() {
       'variables' => array('type' => MARK_NEW),
     ),
     'item_list' => array(
-      'variables' => array('items' => array(), 'title' => NULL, 'type' => 'ul', 'attributes' => array()),
+      'variables' => array('items' => array(), 'title' => '', 'type' => 'ul', 'attributes' => array()),
     ),
     'more_help_link' => array(
       'variables' => array('url' => NULL),
@@ -7060,14 +7072,14 @@ function drupal_parse_info_format($data) {
  */
 function watchdog_severity_levels() {
   return array(
-    WATCHDOG_EMERGENCY => t('emergency'),
-    WATCHDOG_ALERT     => t('alert'),
-    WATCHDOG_CRITICAL  => t('critical'),
+    WATCHDOG_EMERGENCY   => t('emergency'),
+    WATCHDOG_ALERT   => t('alert'),
+    WATCHDOG_CRITICAL    => t('critical'),
     WATCHDOG_ERROR     => t('error'),
-    WATCHDOG_WARNING   => t('warning'),
-    WATCHDOG_NOTICE    => t('notice'),
-    WATCHDOG_INFO      => t('info'),
-    WATCHDOG_DEBUG     => t('debug'),
+    WATCHDOG_WARNING => t('warning'),
+    WATCHDOG_NOTICE  => t('notice'),
+    WATCHDOG_INFO    => t('info'),
+    WATCHDOG_DEBUG   => t('debug'),
   );
 }
 
@@ -7145,10 +7157,17 @@ function drupal_flush_all_caches() {
 
   // Don't clear cache_form - in-progress form submissions may break.
   // Ordered so clearing the page cache will always be the last action.
+<<<<<<< HEAD
   $core = array('cache', 'cache_path', 'cache_filter', 'cache_bootstrap', 'cache_page');
   $cache_tables = array_merge(module_invoke_all('flush_caches'), $core);
   foreach ($cache_tables as $table) {
     cache_clear_all('*', $table, TRUE);
+=======
+  $core = array('cache', 'path', 'filter', 'bootstrap', 'page');
+  $cache_bins = array_merge(module_invoke_all('flush_caches'), $core);
+  foreach ($cache_bins as $bin) {
+    cache($bin)->flush();
+>>>>>>> drupalorg
   }
 
   // Rebuild the bootstrap module list. We do this here so that developers
@@ -7197,7 +7216,7 @@ function debug($data, $label = NULL, $print_r = FALSE) {
  * Parse a dependency for comparison by drupal_check_incompatibility().
  *
  * @param $dependency
- *   A dependency string, for example 'foo (>=7.x-4.5-beta5, 3.x)'.
+ *   A dependency string, for example 'foo (>=8.x-4.5-beta5, 3.x)'.
  * @return
  *   An associative array with three keys:
  *   - 'name' includes the name of the thing to depend on (e.g. 'foo').
@@ -7214,7 +7233,7 @@ function drupal_parse_dependency($dependency) {
   // We use named subpatterns and support every op that version_compare
   // supports. Also, op is optional and defaults to equals.
   $p_op = '(?P<operation>!=|==|=|<|<=|>|>=|<>)?';
-  // Core version is always optional: 7.x-2.x and 2.x is treated the same.
+  // Core version is always optional: 8.x-2.x and 2.x is treated the same.
   $p_core = '(?:' . preg_quote(DRUPAL_CORE_COMPATIBILITY) . '-)?';
   $p_major = '(?P<major>\d+)';
   // By setting the minor version to x, branches can be matched.
@@ -7274,6 +7293,7 @@ function drupal_check_incompatibility($v, $current_version) {
 }
 
 /**
+<<<<<<< HEAD
  * Get the entity info array of an entity type.
  *
  * @see hook_entity_info()
@@ -7695,6 +7715,8 @@ function entity_form_submit_build_entity($entity_type, $entity, $form, &$form_st
 }
 
 /**
+=======
+>>>>>>> drupalorg
  * Performs one or more XML-RPC request(s).
  *
  * Usage example:
@@ -7737,13 +7759,13 @@ function archiver_get_info() {
   $archiver_info = &drupal_static(__FUNCTION__, array());
 
   if (empty($archiver_info)) {
-    $cache = cache_get('archiver_info');
+    $cache = cache()->get('archiver_info');
     if ($cache === FALSE) {
       // Rebuild the cache and save it.
       $archiver_info = module_invoke_all('archiver_info');
       drupal_alter('archiver_info', $archiver_info);
       uasort($archiver_info, 'drupal_sort_weight');
-      cache_set('archiver_info', $archiver_info);
+      cache()->set('archiver_info', $archiver_info);
     }
     else {
       $archiver_info = $cache->data;

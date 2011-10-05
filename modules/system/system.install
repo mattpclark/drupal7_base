@@ -76,15 +76,6 @@ function system_requirements($phase) {
     // If PHP is old, it's not safe to continue with the requirements check.
     return $requirements;
   }
-  // Check that htmlspecialchars() is secure if the site is running any PHP
-  // version older than 5.2.5. We don't simply require 5.2.5, because Ubuntu
-  // 8.04 ships with PHP 5.2.4, but includes the necessary security patch.
-  elseif (version_compare($phpversion, '5.2.5') < 0 && strlen(@htmlspecialchars(chr(0xC0) . chr(0xAF), ENT_QUOTES, 'UTF-8'))) {
-    $requirements['php']['description'] = $t('Your PHP installation is too old. Drupal requires at least PHP 5.2.5, or PHP @version with the htmlspecialchars security patch backported.', array('@version' => DRUPAL_MINIMUM_PHP));
-    $requirements['php']['severity'] = REQUIREMENT_ERROR;
-    // If PHP is old, it's not safe to continue with the requirements check.
-    return $requirements;
-  }
 
   // Test PHP register_globals setting.
   $requirements['php_register_globals'] = array(
@@ -502,7 +493,7 @@ function system_install() {
   // Clear out module list and hook implementation statics before calling
   // system_rebuild_theme_data().
   module_list(TRUE);
-  module_implements('', FALSE, TRUE);
+  module_implements_reset();
 
   // Load system theme data appropriately.
   system_rebuild_theme_data();
@@ -1619,61 +1610,10 @@ function system_schema() {
   return $schema;
 }
 
-/**
- * The cache schema corresponding to system_update_7054.
- *
- * Drupal 7 adds several new cache tables. Since they all have identical schema
- * this helper function allows them to re-use the same definition, without
- * relying on system_schema(), which may change with future updates.
- */
-function system_schema_cache_7054() {
-  return array(
-    'description' => 'Generic cache table for caching things not separated out into their own tables. Contributed modules may also use this to store cached items.',
-    'fields' => array(
-      'cid' => array(
-        'description' => 'Primary Key: Unique cache ID.',
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => '',
-      ),
-      'data' => array(
-        'description' => 'A collection of data to cache.',
-        'type' => 'blob',
-        'not null' => FALSE,
-        'size' => 'big',
-      ),
-      'expire' => array(
-        'description' => 'A Unix timestamp indicating when the cache entry should expire, or 0 for never.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'created' => array(
-        'description' => 'A Unix timestamp indicating when the cache entry was created.',
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-      'serialized' => array(
-        'description' => 'A flag to indicate whether content is serialized (1) or not (0).',
-        'type' => 'int',
-        'size' => 'small',
-        'not null' => TRUE,
-        'default' => 0,
-      ),
-    ),
-    'indexes' => array(
-      'expire' => array('expire'),
-    ),
-    'primary key' => array('cid'),
-  );
-}
-
-
 // Updates for core.
 
 function system_update_last_removed() {
+<<<<<<< HEAD
   return 6055;
 }
 
@@ -1695,11 +1635,15 @@ function system_update_dependencies() {
   );
 
   return $dependencies;
+=======
+  return 7069;
+>>>>>>> drupalorg
 }
 
 /**
- * @defgroup updates-6.x-to-7.x Updates from 6.x to 7.x
+ * @defgroup updates-7.x-to-8.x Updates from 7.x to 8.x
  * @{
+<<<<<<< HEAD
  * Update functions from 6.x to 7.x.
  */
 
@@ -2115,34 +2059,29 @@ function system_update_7029() {
 
 /**
 * Alter field hostname to identifier in the {flood} table.
+=======
+ * Update functions from 7.x to 8.x.
+>>>>>>> drupalorg
  */
-function system_update_7032() {
-  db_drop_index('flood', 'allow');
-  db_change_field('flood', 'hostname', 'identifier', array('type' => 'varchar', 'length' => 128, 'not null' => TRUE, 'default' => ''));
-  db_add_index('flood', 'allow', array('event', 'identifier', 'timestamp'));
+
+/**
+ * Enable entity module.
+ */
+function system_update_8000() {
+  update_module_enable(array('entity'));
 }
 
 /**
- * Move CACHE_AGGRESSIVE to CACHE_NORMAL.
+ * Move from the Garland theme.
  */
-function system_update_7033() {
-  if (variable_get('cache') == 2) {
-    variable_set('cache', 1);
-    return t('Aggressive caching was disabled and replaced with normal caching. Read the page caching section in default.settings.php for more information on how to enable similar functionality.');
-  }
-}
-
-/**
- * Migrate the file path settings and create the new {file_managed} table.
- */
-function system_update_7034() {
-  $files_directory = variable_get('file_directory_path', NULL);
-  if (variable_get('file_downloads', 1) == 1) {
-    // Our default is public, so we don't need to set anything.
-    if (!empty($files_directory)) {
-      variable_set('file_public_path', $files_directory);
+function system_update_8001() {
+  $themes = array('theme_default', 'maintenance_theme', 'admin_theme');
+  foreach ($themes as $theme) {
+    if (variable_get($theme) == 'garland') {
+      variable_set($theme, 'bartik');
     }
   }
+<<<<<<< HEAD
   elseif (variable_get('file_downloads', 1) == 2) {
     variable_set('file_default_scheme', 'private');
     if (!empty($files_directory)) {
@@ -2976,4 +2915,11 @@ function system_update_7071() {
 /**
  * @} End of "defgroup updates-6.x-to-7.x"
  * The next series of updates should start at 8000.
+=======
+}
+
+/**
+ * @} End of "defgroup updates-7.x-to-8.x"
+ * The next series of updates should start at 9000.
+>>>>>>> drupalorg
  */

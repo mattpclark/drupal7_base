@@ -493,7 +493,7 @@ function field_sql_storage_field_storage_query(EntityFieldQuery $query) {
       $select_query->fields($table_alias, array('entity_type', 'entity_id', 'revision_id', 'bundle'));
       $field_base_table = $table_alias;
     }
-    if ($field['cardinality'] != 1) {
+    if ($field['cardinality'] != 1 || $field['translatable']) {
       $select_query->distinct();
     }
   }
@@ -503,7 +503,11 @@ function field_sql_storage_field_storage_query(EntityFieldQuery $query) {
   _field_sql_storage_query_field_conditions($query, $select_query, $query->fieldConditions, $table_aliases, '_field_sql_storage_columnname');
 
   // Add field meta conditions.
+<<<<<<< HEAD
   _field_sql_storage_query_field_conditions($query, $select_query, $query->fieldMetaConditions, $table_aliases, '_field_sql_storage_query_columnname');
+=======
+  _field_sql_storage_query_field_conditions($query, $select_query, $query->fieldMetaConditions, $table_aliases, function ($field_name, $column) { return $column; });
+>>>>>>> drupalorg
 
   if (isset($query->deleted)) {
     $select_query->condition("$field_base_table.deleted", (int) $query->deleted);
@@ -615,6 +619,7 @@ function _field_sql_storage_query_field_conditions(EntityFieldQuery $query, Sele
 }
 
 /**
+<<<<<<< HEAD
  * Field meta condition column callback.
  */
 function _field_sql_storage_query_columnname($field_name, $column) {
@@ -622,6 +627,8 @@ function _field_sql_storage_query_columnname($field_name, $column) {
 }
 
 /**
+=======
+>>>>>>> drupalorg
  * Implements hook_field_storage_delete_revision().
  *
  * This function actually deletes the data from the database.

@@ -253,12 +253,13 @@ function install_begin_request(&$install_state) {
   // Set up $language, so t() caller functions will still work.
   drupal_language_initialize();
 
-  include_once DRUPAL_ROOT . '/includes/entity.inc';
   require_once DRUPAL_ROOT . '/includes/ajax.inc';
   $module_list['system']['filename'] = 'modules/system/system.module';
-  $module_list['user']['filename'] = 'modules/user/user.module';
+  $module_list['entity']['filename'] = 'modules/entity/entity.module';
+  $module_list['user']['filename']   = 'modules/user/user.module';
   module_list(TRUE, FALSE, FALSE, $module_list);
   drupal_load('module', 'system');
+  drupal_load('module', 'entity');
   drupal_load('module', 'user');
 
   // Load the cache infrastructure using a "fake" cache implementation that
@@ -710,8 +711,10 @@ function install_display_output($output, $install_state) {
  *
  * @return
  *   A themed status report, or an exception if there are requirement errors.
- *   Otherwise, no output is returned, so that the next task can be run
- *   in the same page request.
+ *   If there are only requirement warnings, a themed status report is shown
+ *   initially, but the user is allowed to bypass it by providing 'continue=1'
+ *   in the URL. Otherwise, no output is returned, so that the next task can be
+ *   run in the same page request.
  */
 function install_verify_requirements(&$install_state) {
   // Check the installation requirements for Drupal and this profile.
@@ -723,22 +726,30 @@ function install_verify_requirements(&$install_state) {
   // Check the severity of the requirements reported.
   $severity = drupal_requirements_severity($requirements);
 
-  if ($severity == REQUIREMENT_ERROR) {
+  // If there are errors, always display them. If there are only warnings, skip
+  // them if the user has provided a URL parameter acknowledging the warnings
+  // and indicating a desire to continue anyway. See drupal_requirements_url().
+  if ($severity == REQUIREMENT_ERROR || ($severity == REQUIREMENT_WARNING && empty($install_state['parameters']['continue']))) {
     if ($install_state['interactive']) {
       drupal_set_title(st('Requirements problem'));
       $status_report = theme('status_report', array('requirements' => $requirements));
-      $status_report .= st('Check the error messages and <a href="!url">proceed with the installation</a>.', array('!url' => check_url(request_uri())));
+      $status_report .= st('Check the messages and <a href="!url">proceed with the installation</a>.', array('!url' => check_url(drupal_requirements_url($severity))));
       return $status_report;
     }
     else {
-      // Throw an exception showing all unmet requirements.
+      // Throw an exception showing any unmet requirements.
       $failures = array();
       foreach ($requirements as $requirement) {
+        // Skip warnings altogether for non-interactive installations; these
+        // proceed in a single request so there is no good opportunity (and no
+        // good method) to warn the user anyway.
         if (isset($requirement['severity']) && $requirement['severity'] == REQUIREMENT_ERROR) {
           $failures[] = $requirement['title'] . ': ' . $requirement['value'] . "\n\n" . $requirement['description'];
         }
       }
-      throw new Exception(implode("\n\n", $failures));
+      if (!empty($failures)) {
+        throw new Exception(implode("\n\n", $failures));
+      }
     }
   }
 }
@@ -1234,8 +1245,8 @@ function install_select_locale(&$install_state) {
  * Form API array definition for language selection.
  */
 function install_select_locale_form($form, &$form_state, $locales, $profilename) {
-  include_once DRUPAL_ROOT . '/includes/iso.inc';
-  $languages = _locale_get_predefined_list();
+  include_once DRUPAL_ROOT . '/includes/standard.inc';
+  $languages = standard_language_list();
   foreach ($locales as $locale) {
     $name = $locale->langcode;
     if (isset($languages[$name])) {
@@ -1373,18 +1384,29 @@ function install_profile_modules(&$install_state) {
  */
 function install_import_locales(&$install_state) {
   include_once DRUPAL_ROOT . '/includes/locale.inc';
+  include_once drupal_get_path('module', 'locale') . '/locale.bulk.inc';
   $install_locale = $install_state['parameters']['locale'];
 
-  include_once DRUPAL_ROOT . '/includes/iso.inc';
-  $predefined = _locale_get_predefined_list();
+  include_once DRUPAL_ROOT . '/includes/standard.inc';
+  $predefined = standard_language_list();
   if (!isset($predefined[$install_locale])) {
     // Drupal does not know about this language, so we prefill its values with
     // our best guess. The user will be able to edit afterwards.
-    locale_add_language($install_locale, $install_locale, $install_locale, LANGUAGE_LTR, '', '', TRUE, TRUE);
+    $language = (object) array(
+      'language' => $install_locale,
+      'name' => $install_locale,
+      'native' => $install_locale,
+      'default' => TRUE,
+    );
+    locale_language_save($language);
   }
   else {
     // A known predefined language, details will be filled in properly.
-    locale_add_language($install_locale, NULL, NULL, NULL, '', '', TRUE, TRUE);
+    $language = (object) array(
+      'language' => $install_locale,
+      'default' => TRUE,
+    );
+    locale_language_save($language);
   }
 
   // Collect files to import for this language.

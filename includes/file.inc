@@ -462,11 +462,11 @@ function file_prepare_directory(&$directory, $options = FILE_MODIFY_PERMISSIONS)
  * If missing, create a .htaccess file in each Drupal files directory.
  */
 function file_ensure_htaccess() {
-  file_create_htaccess('public://', FALSE);
+  file_save_htaccess('public://', FALSE);
   if (variable_get('file_private_path', FALSE)) {
-    file_create_htaccess('private://', TRUE);
+    file_save_htaccess('private://', TRUE);
   }
-  file_create_htaccess('temporary://', TRUE);
+  file_save_htaccess('temporary://', TRUE);
 }
 
 /**
@@ -478,7 +478,7 @@ function file_ensure_htaccess() {
  *   FALSE indicates that $directory should be an open and public directory.
  *   The default is TRUE which indicates a private and protected directory.
  */
-function file_create_htaccess($directory, $private = TRUE) {
+function file_save_htaccess($directory, $private = TRUE) {
   if (file_uri_scheme($directory)) {
     $directory = file_stream_wrapper_uri_normalize($directory);
   }
@@ -605,7 +605,8 @@ function file_save(stdClass $file) {
  *
  * @return
  *   A nested array with usage data. The first level is keyed by module name,
- *   the second by object type, the third has 'id' and 'count' keys.
+ *   the second by object type and the third by the object id. The value
+ *   of the third level contains the usage count.
  *
  * @see file_usage_add()
  * @see file_usage_delete()
@@ -618,7 +619,7 @@ function file_usage_list(stdClass $file) {
     ->execute();
   $references = array();
   foreach ($result as $usage) {
-    $references[$usage->module][$usage->type] = array('id' => $usage->id, 'count' => $usage->count);
+    $references[$usage->module][$usage->type][$usage->id] = $usage->count;
   }
   return $references;
 }
@@ -756,12 +757,21 @@ function file_usage_delete(stdClass $file, $module, $type = NULL, $id = NULL, $c
 function file_copy(stdClass $source, $destination = NULL, $replace = FILE_EXISTS_RENAME) {
   if (!file_valid_uri($destination)) {
     if (($realpath = drupal_realpath($source->uri)) !== FALSE) {
+<<<<<<< HEAD
       watchdog('file', 'File %file (%realpath) could not be copied, because the destination %destination is invalid. This is often caused by improper use of file_copy() or a missing stream wrapper.', array('%file' => $source->uri, '%realpath' => $realpath, '%destination' => $destination));
     }
     else {
       watchdog('file', 'File %file could not be copied, because the destination %destination is invalid. This is often caused by improper use of file_copy() or a missing stream wrapper.', array('%file' => $source->uri, '%destination' => $destination));
     }
     drupal_set_message(t('The specified file %file could not be copied, because the destination is invalid. More information is available in the system log.', array('%file' => $source->uri)), 'error');
+=======
+      watchdog('file', 'File %file (%realpath) could not be copied because the destination %destination is invalid. This is often caused by improper use of file_copy() or a missing stream wrapper.', array('%file' => $source->uri, '%realpath' => $realpath, '%destination' => $destination));
+    }
+    else {
+      watchdog('file', 'File %file could not be copied because the destination %destination is invalid. This is often caused by improper use of file_copy() or a missing stream wrapper.', array('%file' => $source->uri, '%destination' => $destination));
+    }
+    drupal_set_message(t('The specified file %file could not be copied because the destination is invalid. More information is available in the system log.', array('%file' => $source->uri)), 'error');
+>>>>>>> drupalorg
     return FALSE;
   }
 
@@ -854,7 +864,11 @@ function file_unmanaged_copy($source, $destination = NULL, $replace = FILE_EXIST
   // Assert that the source file actually exists.
   if (!file_exists($source)) {
     // @todo Replace drupal_set_message() calls with exceptions instead.
+<<<<<<< HEAD
     drupal_set_message(t('The specified file %file could not be copied, because no file by that name exists. Please check that you supplied the correct filename.', array('%file' => $original_source)), 'error');
+=======
+    drupal_set_message(t('The specified file %file could not be copied because no file by that name exists. Please check that you supplied the correct filename.', array('%file' => $original_source)), 'error');
+>>>>>>> drupalorg
     if (($realpath = drupal_realpath($original_source)) !== FALSE) {
       watchdog('file', 'File %file (%realpath) could not be copied because it does not exist.', array('%file' => $original_source, '%realpath' => $realpath));
     }
@@ -880,8 +894,13 @@ function file_unmanaged_copy($source, $destination = NULL, $replace = FILE_EXIST
     $dirname = drupal_dirname($destination);
     if (!file_prepare_directory($dirname)) {
       // The destination is not valid.
+<<<<<<< HEAD
       watchdog('file', 'File %file could not be copied, because the destination directory %destination is not configured correctly.', array('%file' => $original_source, '%destination' => $dirname));
       drupal_set_message(t('The specified file %file could not be copied, because the destination directory is not properly configured. This may be caused by a problem with file or directory permissions. More information is available in the system log.', array('%file' => $original_source)), 'error');
+=======
+      watchdog('file', 'File %file could not be copied because the destination directory %destination is not configured correctly.', array('%file' => $original_source, '%destination' => $dirname));
+      drupal_set_message(t('The specified file %file could not be copied because the destination directory is not properly configured. This may be caused by a problem with file or directory permissions. More information is available in the system log.', array('%file' => $original_source)), 'error');
+>>>>>>> drupalorg
       return FALSE;
     }
   }
@@ -998,12 +1017,21 @@ function file_destination($destination, $replace) {
 function file_move(stdClass $source, $destination = NULL, $replace = FILE_EXISTS_RENAME) {
   if (!file_valid_uri($destination)) {
     if (($realpath = drupal_realpath($source->uri)) !== FALSE) {
+<<<<<<< HEAD
       watchdog('file', 'File %file (%realpath) could not be moved, because the destination %destination is invalid. This may be caused by improper use of file_move() or a missing stream wrapper.', array('%file' => $source->uri, '%realpath' => $realpath, '%destination' => $destination));
     }
     else {
       watchdog('file', 'File %file could not be moved, because the destination %destination is invalid. This may be caused by improper use of file_move() or a missing stream wrapper.', array('%file' => $source->uri, '%destination' => $destination));
     }
     drupal_set_message(t('The specified file %file could not be moved, because the destination is invalid. More information is available in the system log.', array('%file' => $source->uri)), 'error');
+=======
+      watchdog('file', 'File %file (%realpath) could not be moved because the destination %destination is invalid. This may be caused by improper use of file_move() or a missing stream wrapper.', array('%file' => $source->uri, '%realpath' => $realpath, '%destination' => $destination));
+    }
+    else {
+      watchdog('file', 'File %file could not be moved because the destination %destination is invalid. This may be caused by improper use of file_move() or a missing stream wrapper.', array('%file' => $source->uri, '%destination' => $destination));
+    }
+    drupal_set_message(t('The specified file %file could not be moved because the destination is invalid. More information is available in the system log.', array('%file' => $source->uri)), 'error');
+>>>>>>> drupalorg
     return FALSE;
   }
 
@@ -1234,7 +1262,11 @@ function file_delete(stdClass $file, $force = FALSE) {
     else {
       watchdog('file', 'File %file could not be deleted because it is not a valid URI. This may be caused by improper use of file_delete() or a missing stream wrapper.', array('%file' => $file->uri));
     }
+<<<<<<< HEAD
     drupal_set_message(t('The specified file %file could not be deleted, because it is not a valid URI. More information is available in the system log.', array('%file' => $file->uri)), 'error');
+=======
+    drupal_set_message(t('The specified file %file could not be deleted because it is not a valid URI. More information is available in the system log.', array('%file' => $file->uri)), 'error');
+>>>>>>> drupalorg
     return FALSE;
   }
 
@@ -1287,7 +1319,7 @@ function file_unmanaged_delete($path) {
   // Return TRUE for non-existent file, but log that nothing was actually
   // deleted, as the current state is the intended result.
   if (!file_exists($path)) {
-    watchdog('file', 'The file %path was not deleted, because it does not exist.', array('%path' => $path), WATCHDOG_NOTICE);
+    watchdog('file', 'The file %path was not deleted because it does not exist.', array('%path' => $path), WATCHDOG_NOTICE);
     return TRUE;
   }
   // We cannot handle anything other than files and directories. Log an error
@@ -1417,12 +1449,12 @@ function file_save_upload($source, $validators = array(), $destination = FALSE, 
   switch ($_FILES['files']['error'][$source]) {
     case UPLOAD_ERR_INI_SIZE:
     case UPLOAD_ERR_FORM_SIZE:
-      drupal_set_message(t('The file %file could not be saved, because it exceeds %maxsize, the maximum allowed size for uploads.', array('%file' => $_FILES['files']['name'][$source], '%maxsize' => format_size(file_upload_max_size()))), 'error');
+      drupal_set_message(t('The file %file could not be saved because it exceeds %maxsize, the maximum allowed size for uploads.', array('%file' => $_FILES['files']['name'][$source], '%maxsize' => format_size(file_upload_max_size()))), 'error');
       return FALSE;
 
     case UPLOAD_ERR_PARTIAL:
     case UPLOAD_ERR_NO_FILE:
-      drupal_set_message(t('The file %file could not be saved, because the upload did not complete.', array('%file' => $_FILES['files']['name'][$source])), 'error');
+      drupal_set_message(t('The file %file could not be saved because the upload did not complete.', array('%file' => $_FILES['files']['name'][$source])), 'error');
       return FALSE;
 
     case UPLOAD_ERR_OK:
@@ -1498,7 +1530,7 @@ function file_save_upload($source, $validators = array(), $destination = FALSE, 
   // Assert that the destination contains a valid stream.
   $destination_scheme = file_uri_scheme($destination);
   if (!$destination_scheme || !file_stream_wrapper_valid_scheme($destination_scheme)) {
-    drupal_set_message(t('The file could not be uploaded, because the destination %destination is invalid.', array('%destination' => $destination)), 'error');
+    drupal_set_message(t('The file could not be uploaded because the destination %destination is invalid.', array('%destination' => $destination)), 'error');
     return FALSE;
   }
 
@@ -1831,7 +1863,7 @@ function file_save_data($data, $destination = NULL, $replace = FILE_EXISTS_RENAM
   }
   if (!file_valid_uri($destination)) {
     watchdog('file', 'The data could not be saved because the destination %destination is invalid. This may be caused by improper use of file_save_data() or a missing stream wrapper.', array('%destination' => $destination));
-    drupal_set_message(t('The data could not be saved, because the destination is invalid. More information is available in the system log.'), 'error');
+    drupal_set_message(t('The data could not be saved because the destination is invalid. More information is available in the system log.'), 'error');
     return FALSE;
   }
 
@@ -2191,27 +2223,36 @@ function drupal_unlink($uri, $context = NULL) {
 }
 
 /**
- * Returns the absolute path of a file or directory
+ * Returns the absolute local filesystem path of a stream URI.
  *
- * PHP's realpath() does not properly support streams, so this function
- * fills that gap. If a stream wrapped URI is provided, it will be passed
- * to the registered wrapper for handling. If the URI does not contain a
- * scheme or the wrapper implementation does not implement realpath, then
- * FALSE will be returned.
+ * This function was originally written to ease the conversion of 6.x code to
+ * use 7.x stream wrappers. However, it assumes that every URI may be resolved
+ * to an absolute local filesystem path, and this assumption fails when stream
+ * wrappers are used to support remote file storage. Remote stream wrappers
+ * may implement the realpath method by always returning FALSE. The use of
+ * drupal_realpath() is discouraged, and is slowly being removed from core
+ * functions where possible.
  *
- * @see http://php.net/manual/en/function.realpath.php
- *
- * Compatibility: normal paths and stream wrappers.
- * @see http://drupal.org/node/515192
+ * Only use this function if you know that the stream wrapper in the URI uses
+ * the local file system, and you need to pass an absolute path to a function
+ * that is incompatible with stream URIs.
  *
  * @param $uri
+<<<<<<< HEAD
  *   A string containing the URI to verify.
+=======
+ *   A stream wrapper URI or a filesystem path, possibly including one or more
+ *   symbolic links.
+>>>>>>> drupalorg
  *
  * @return
- *   The absolute pathname, or FALSE on failure.
+ *   The absolute local filesystem path (with no symbolic links), or FALSE on
+ *   failure.
  *
- * @see realpath()
+ * @see DrupalStreamWrapperInterface::realpath()
+ * @see http://php.net/manual/function.realpath.php
  * @ingroup php_wrappers
+ * @todo: This function is deprecated, and should be removed wherever possible.
  */
 function drupal_realpath($uri) {
   // If this URI is a stream, pass it off to the appropriate stream wrapper.
@@ -2220,14 +2261,8 @@ function drupal_realpath($uri) {
   if ($wrapper = file_stream_wrapper_get_instance_by_uri($uri)) {
     return $wrapper->realpath();
   }
-  // Check that the uri has a value. There is a bug in PHP 5.2 on *BSD systems
-  // that makes realpath not return FALSE as expected when passing an empty
-  // variable.
-  // @todo Remove when Drupal drops support for PHP 5.2.
-  elseif (!empty($uri)) {
-    return realpath($uri);
-  }
-  return FALSE;
+
+  return realpath($uri);
 }
 
 /**
@@ -2391,11 +2426,7 @@ function file_directory_temp() {
       $directories[] = '/tmp';
     }
     // PHP may be able to find an alternative tmp directory.
-    // This function exists in PHP 5 >= 5.2.1, but Drupal
-    // requires PHP 5 >= 5.2.0, so we check for it.
-    if (function_exists('sys_get_temp_dir')) {
-      $directories[] = sys_get_temp_dir();
-    }
+    $directories[] = sys_get_temp_dir();
 
     foreach ($directories as $directory) {
       if (is_dir($directory) && is_writable($directory)) {

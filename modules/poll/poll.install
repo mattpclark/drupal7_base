@@ -147,6 +147,7 @@ function poll_schema() {
 
   return $schema;
 }
+<<<<<<< HEAD
 
 /**
  * Use the poll_choice primary key to record votes in poll_votes rather than
@@ -204,3 +205,5 @@ function poll_update_7004() {
   // Remove field default.
   db_change_field('poll_vote', 'chid', 'chid', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE));
 }
+=======
+>>>>>>> drupalorg

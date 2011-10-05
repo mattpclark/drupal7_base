@@ -1,22 +1,24 @@
-
-Drupal core is maintained by the community.  To participate, go to
-
-  http://drupal.org/contribute
-
-The people listed here have agreed to do more quality assurance work for
-particular areas of Drupal.  All of them are subject to change.
-
+Drupal core is built and maintained by the Drupal project community. Everyone is
+encouraged to submit issues and changes (patches) to improve Drupal, and to
+contribute in other ways -- see http://drupal.org/contribute to find out how.
 
 Branch maintainers
 ------------------
 
-Drupal 7
+The Drupal Core branch maintainers oversee the development of Drupal as a
+whole. The branch mainainers for Drupal 8 are:
+
 - Dries Buytaert 'dries' <http://drupal.org/user/1>
-- Angela Byron 'webchick' <http://drupal.org/user/24967>
+- Nathaniel Catchpole 'catch' <http://drupal.org/user/35733>
 
 
 Component maintainers
 ---------------------
+
+The Drupal Core component maintainers oversee the development of Drupal
+subsystems. See http://drupal.org/contribute/core-maintainers for more
+information on their responsibilities, and to find out how to become a component
+maintainer. Current component maintainers for Drupal 8:
 
 Ajax system
 - Alex Bronstein 'effulgentsia' <http://drupal.org/user/78040>
@@ -33,6 +35,7 @@ Batch system
 
 Cache system
 - Damien Tournoud 'DamZ' <http://drupal.org/user/22211>
+- Nathaniel Catchpole 'catch' <http://drupal.org/user/35733>
 
 Cron system
 - Károly Négyesi 'chx' <http://drupal.org/user/9446>
@@ -126,7 +129,7 @@ Topic coordinators
 
 Accessibility
 - Everett Zufelt 'Everett Zufelt' <http://drupal.org/user/406552>
-- Brandon Bowersox 'brandonojc' <http://drupal.org/user/186415> 
+- Brandon Bowersox 'brandonojc' <http://drupal.org/user/186415>
 
 Documentation
 - Ariane Khachatourians 'arianek' <http://drupal.org/user/158886>
@@ -152,9 +155,6 @@ Aggregator module
 Block module
 - John Albin Wilkins 'JohnAlbin' <http://drupal.org/user/32095>
 
-Blog module
-- ?
-
 Book module
 - Peter Wolanin 'pwolanin' <http://drupal.org/user/49851>
 
@@ -162,7 +162,7 @@ Color module
 - ?
 
 Comment module
-- Nathaniel Catchpole 'catch' <http://drupal.org/user/35733>
+- Dick Olsson 'dixon_' <http://drupal.org/user/239911>
 
 Contact module
 - Dave Reid 'davereid' <http://drupal.org/user/53892>
@@ -226,9 +226,6 @@ PHP module
 Poll module
 - ?
 
-Profile module
-- ?
-
 RDF module
 - Stéphane Corlosquet 'scor' <http://drupal.org/user/52142>
 
@@ -282,9 +279,6 @@ Theme maintainers
 Bartik theme
 - Jen Simmons 'jensimmons' <http://drupal.org/user/140882>
 - Jeff Burns 'Jeff Burnz' <http://drupal.org/user/61393>
-
-Garland theme
-- John Albin Wilkins 'JohnAlbin' <http://drupal.org/user/32095>
 
 Seven theme
 - Jeff Burns 'Jeff Burnz' <http://drupal.org/user/61393>

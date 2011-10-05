@@ -273,7 +273,7 @@ function theme_field_multiple_value_form($variables) {
   if ($element['#cardinality'] > 1 || $element['#cardinality'] == FIELD_CARDINALITY_UNLIMITED) {
     $table_id = drupal_html_id($element['#field_name'] . '_values');
     $order_class = $element['#field_name'] . '-delta-order';
-    $required = !empty($element['#required']) ? '<span class="form-required" title="' . t('This field is required. ') . '">*</span>' : '';
+    $required = !empty($element['#required']) ? theme('form_required_marker', $variables) : '';
 
     $header = array(
       array(
@@ -362,7 +362,7 @@ function field_default_form_errors($entity_type, $entity, $field, $instance, $la
     $function_exists = function_exists($function);
 
     // Locate the correct element in the the form.
-    $element = drupal_array_get_nested_value($form_state['complete form'], $field_state['array_parents']);
+    $element = drupal_array_get_nested_value($form_state['complete_form'], $field_state['array_parents']);
 
     $multiple_widget = field_behaviors_widget('multiple values', $instance) != FIELD_BEHAVIOR_DEFAULT;
     foreach ($field_state['errors'] as $delta => $delta_errors) {

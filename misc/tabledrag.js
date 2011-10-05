@@ -301,11 +301,6 @@ Drupal.tableDrag.prototype.makeDraggable = function (item) {
       $(self.oldRowElement).removeClass('drag-previous');
     }
 
-    // Hack for IE6 that flickers uncontrollably if select lists are moved.
-    if (navigator.userAgent.indexOf('MSIE 6.') != -1) {
-      $('select', this.table).css('display', 'none');
-    }
-
     // Hack for Konqueror, prevent the blur handler from firing.
     // Konqueror always gives links focus, even after returning false on mousedown.
     self.safeBlur = false;
@@ -559,11 +554,6 @@ Drupal.tableDrag.prototype.dropRow = function (event, self) {
     self.dragObject = null;
     $('body').removeClass('drag');
     clearInterval(self.scrollInterval);
-
-    // Hack for IE6 that flickers uncontrollably if select lists are moved.
-    if (navigator.userAgent.indexOf('MSIE 6.') != -1) {
-      $('select', this.table).css('display', 'block');
-    }
   }
 };
 
@@ -1138,7 +1128,7 @@ Drupal.tableDrag.prototype.row.prototype.removeIndentClasses = function () {
 Drupal.tableDrag.prototype.row.prototype.markChanged = function () {
   var marker = Drupal.theme('tableDragChangedMarker');
   var cell = $('td:first', this.element);
-  if ($('span.tabledrag-changed', cell).length == 0) {
+  if ($('abbr.tabledrag-changed', cell).length == 0) {
     cell.append(marker);
   }
 };
@@ -1158,7 +1148,7 @@ Drupal.tableDrag.prototype.row.prototype.onSwap = function (swappedRow) {
 };
 
 Drupal.theme.prototype.tableDragChangedMarker = function () {
-  return '<span class="warning tabledrag-changed">*</span>';
+  return '<abbr class="warning tabledrag-changed" title="' + Drupal.t('Changed') + '">*</abbr>';
 };
 
 Drupal.theme.prototype.tableDragIndentation = function () {

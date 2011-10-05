@@ -158,7 +158,7 @@ function menu_overview_form_submit($form, &$form_state) {
   // are sent by $_POST, ensuring parents are saved first, then their children.
   // See http://drupal.org/node/181126#comment-632270
   $order = array_flip(array_keys($form_state['input'])); // Get the $_POST order.
-  $form = array_merge($order, $form); // Update our original form with the new order.
+  $form = array_intersect_key(array_merge($order, $form), $form); // Update our original form with the new order.
 
   $updated_items = array();
   $fields = array('weight', 'plid');
@@ -286,6 +286,7 @@ function menu_edit_item($form, &$form_state, $type, $item, $menu) {
     $form['link_path'] = array(
       '#type' => 'textfield',
       '#title' => t('Path'),
+      '#maxlength' => 255,
       '#default_value' => $path,
       '#description' => t('The path for this menu link. This can be an internal Drupal path such as %add-node or an external URL such as %drupal. Enter %front to link to the front page.', array('%front' => '<front>', '%add-node' => 'node/add', '%drupal' => 'http://drupal.org')),
       '#required' => TRUE,
@@ -377,7 +378,7 @@ function menu_edit_item_validate($form, &$form_state) {
     else {
       unset($item['options']['fragment']);
     }
-    if ($item['link_path'] != $parsed_link['path']) {
+    if (isset($parsed_link['path']) && $item['link_path'] != $parsed_link['path']) {
       $item['link_path'] = $parsed_link['path'];
     }
   }

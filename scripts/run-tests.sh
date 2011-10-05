@@ -122,7 +122,7 @@ All arguments are long options.
   --clean     Cleans up database tables or directories from previous, failed,
               tests and then exits (no tests are run).
 
-  --url       Immediately preceeds a URL to set the host and path. You will
+  --url       Immediately precedes a URL to set the host and path. You will
               need this parameter if Drupal is in a subdirectory on your
               localhost and you have not set \$base_url in settings.php. Tests
               can be run under SSL by including https:// in the URL.
@@ -297,7 +297,7 @@ function simpletest_script_init($server_software) {
     }
   }
 
-  chdir(realpath(dirname(__FILE__) . '/..'));
+  chdir(realpath(__DIR__ . '/..'));
   define('DRUPAL_ROOT', getcwd());
   require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
 }
@@ -359,6 +359,7 @@ function simpletest_script_run_one_test($test_id, $test_class) {
   try {
     // Bootstrap Drupal.
     drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
+<<<<<<< HEAD
 
     $test = new $test_class($test_id);
     $test->run();
@@ -369,6 +370,18 @@ function simpletest_script_run_one_test($test_id, $test_class) {
     $status = ($had_fails || $had_exceptions ? 'fail' : 'pass');
     simpletest_script_print($info['name'] . ' ' . _simpletest_format_summary_line($test->results) . "\n", simpletest_script_color_code($status));
 
+=======
+
+    $test = new $test_class($test_id);
+    $test->run();
+    $info = $test->getInfo();
+
+    $had_fails = (isset($test->results['#fail']) && $test->results['#fail'] > 0);
+    $had_exceptions = (isset($test->results['#exception']) && $test->results['#exception'] > 0);
+    $status = ($had_fails || $had_exceptions ? 'fail' : 'pass');
+    simpletest_script_print($info['name'] . ' ' . _simpletest_format_summary_line($test->results) . "\n", simpletest_script_color_code($status));
+
+>>>>>>> drupalorg
     // Finished, kill this runner.
     exit(0);
   }
@@ -485,12 +498,13 @@ function simpletest_script_reporter_init() {
     echo "\n";
   }
 
-  echo "Test run started: " . format_date($_SERVER['REQUEST_TIME'], 'long') . "\n";
+  echo "Test run started:\n";
+  echo " " . format_date($_SERVER['REQUEST_TIME'], 'long') . "\n";
   timer_start('run-tests');
   echo "\n";
 
-  echo "Test summary:\n";
-  echo "-------------\n";
+  echo "Test summary\n";
+  echo "------------\n";
   echo "\n";
 }
 
@@ -571,7 +585,7 @@ function simpletest_script_reporter_timer_stop() {
   echo "\n";
   $end = timer_stop('run-tests');
   echo "Test run duration: " . format_interval($end['time'] / 1000);
-  echo "\n";
+  echo "\n\n";
 }
 
 /**

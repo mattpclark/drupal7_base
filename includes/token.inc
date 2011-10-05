@@ -108,7 +108,11 @@ function token_replace($text, array $data = array(), array $options = array()) {
  */
 function token_scan($text) {
   // Matches tokens with the following pattern: [$type:$name]
+<<<<<<< HEAD
   // $type and $name may not contain  [ ] or whitespace characters.
+=======
+  // $type and $name may not contain [ ] or whitespace characters.
+>>>>>>> drupalorg
   // $type may not contain : characters, but $name may.
   preg_match_all('/
     \[             # [ - pattern start

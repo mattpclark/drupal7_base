@@ -39,4 +39,8 @@ function node_access_test_schema() {
   );
 
   return $schema;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> drupalorg

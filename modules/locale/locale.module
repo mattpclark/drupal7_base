@@ -48,8 +48,7 @@ function locale_help($path, $arg) {
       $output = '<p>' . t('Determine the language from a request/session parameter. Example: "http://example.com?language=de" sets language to German based on the use of "de" within the "language" parameter.') . '</p>';
       return $output;
     case 'admin/config/regional/translate':
-      $output = '<p>' . t('This page provides an overview of available translatable strings. Drupal displays translatable strings in text groups; modules may define additional text groups containing other translatable strings. Because text groups provide a method of grouping related strings, they are often used to focus translation efforts on specific areas of the Drupal interface.') . '</p>';
-      $output .= '<p>' . t('See the <a href="@languages">Languages page</a> for more information on adding support for additional languages.', array('@languages' => url('admin/config/regional/language'))) . '</p>';
+      $output = '<p>' . t('This page provides an overview of available translatable strings. See the <a href="@languages">Languages page</a> for more information on adding support for additional languages.', array('@languages' => url('admin/config/regional/language'))) . '</p>';
       return $output;
     case 'admin/config/regional/translate/import':
       $output = '<p>' . t('This page imports the translated strings contained in an individual Gettext Portable Object (<em>.po</em>) file. Normally distributed as part of a translation package (each translation package may contain several <em>.po</em> files), a <em>.po</em> file may need to be imported after offline editing in a Gettext translation editor. Importing an individual <em>.po</em> file may be a lengthy process.') . '</p>';
@@ -58,7 +57,11 @@ function locale_help($path, $arg) {
     case 'admin/config/regional/translate/export':
       return '<p>' . t('This page exports the translated strings used by your site. An export file may be in Gettext Portable Object (<em>.po</em>) form, which includes both the original string and the translation (used to share translations with others), or in Gettext Portable Object Template (<em>.pot</em>) form, which includes the original strings only (used to create new translations with a Gettext translation editor).') . '</p>';
     case 'admin/config/regional/translate/translate':
+<<<<<<< HEAD
       return '<p>' . t('This page allows a translator to search for specific translated and untranslated strings, and is used when creating or editing translations. (Note: For translation tasks involving many strings, it may be more convenient to <a href="@export">export</a> strings for offline editing in a desktop Gettext translation editor.) Searches may be limited to strings found within a specific text group or in a specific language.', array('@export' => url('admin/config/regional/translate/export'))) . '</p>';
+=======
+      return '<p>' . t('This page allows a translator to search for specific translated and untranslated strings, and is used when creating or editing translations. (Note: For translation tasks involving many strings, it may be more convenient to <a href="@export">export</a> strings for offline editing in a desktop Gettext translation editor.) Searches may be limited to strings in a specific language.', array('@export' => url('admin/config/regional/translate/export'))) . '</p>';
+>>>>>>> drupalorg
     case 'admin/structure/block/manage/%/%':
       if ($arg[4] == 'locale' && $arg[5] == 'language') {
         return '<p>' . t('This block is only shown if <a href="@languages">at least two languages are enabled</a> and <a href="@configuration">language negotiation</a> is set to <em>URL</em> or <em>Session</em>.', array('@languages' => url('admin/config/regional/language'), '@configuration' => url('admin/config/regional/language/configure'))) . '</p>';
@@ -140,7 +143,7 @@ function locale_menu() {
     'description' => 'Translate the built in interface and optionally other text.',
     'page callback' => 'locale_translate_overview_screen',
     'access arguments' => array('translate interface'),
-    'file' => 'locale.admin.inc',
+    'file' => 'locale.pages.inc',
     'weight' => -5,
   );
   $items['admin/config/regional/translate/overview'] = array(
@@ -154,7 +157,7 @@ function locale_menu() {
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'locale_translate_seek_screen', // search results and form concatenated
     'access arguments' => array('translate interface'),
-    'file' => 'locale.admin.inc',
+    'file' => 'locale.pages.inc',
   );
   $items['admin/config/regional/translate/import'] = array(
     'title' => 'Import',
@@ -163,7 +166,7 @@ function locale_menu() {
     'access arguments' => array('translate interface'),
     'weight' => 20,
     'type' => MENU_LOCAL_TASK,
-    'file' => 'locale.admin.inc',
+    'file' => 'locale.bulk.inc',
   );
   $items['admin/config/regional/translate/export'] = array(
     'title' => 'Export',
@@ -171,21 +174,21 @@ function locale_menu() {
     'access arguments' => array('translate interface'),
     'weight' => 30,
     'type' => MENU_LOCAL_TASK,
-    'file' => 'locale.admin.inc',
+    'file' => 'locale.bulk.inc',
   );
   $items['admin/config/regional/translate/edit/%'] = array(
     'title' => 'Edit string',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('locale_translate_edit_form', 5),
     'access arguments' => array('translate interface'),
-    'file' => 'locale.admin.inc',
+    'file' => 'locale.pages.inc',
   );
   $items['admin/config/regional/translate/delete/%'] = array(
     'title' => 'Delete string',
     'page callback' => 'locale_translate_delete_page',
     'page arguments' => array(5),
     'access arguments' => array('translate interface'),
-    'file' => 'locale.admin.inc',
+    'file' => 'locale.pages.inc',
   );
 
   // Localize date formats.
@@ -258,16 +261,6 @@ function locale_permission() {
 }
 
 /**
- * Implements hook_locale().
- */
-function locale_locale($op = 'groups') {
-  switch ($op) {
-    case 'groups':
-      return array('default' => t('Built-in interface'));
-  }
-}
-
-/**
  * Form builder callback to display language selection widget.
  *
  * @ingroup forms
@@ -301,20 +294,6 @@ function locale_language_selector_form(&$form, &$form_state, $user) {
     '#default_value' => $user_preferred_language->language,
     '#options' => $names,
     '#description' => $mode ? t("This account's default language for e-mails, and preferred language for site presentation.") : t("This account's default language for e-mails."),
-  );
-}
-
-/**
- * Implements hook_form_FORM_ID_alter().
- */
-function locale_form_path_admin_form_alter(&$form, &$form_state) {
-  $form['language'] = array(
-    '#type' => 'select',
-    '#title' => t('Language'),
-    '#options' => array(LANGUAGE_NONE => t('All languages')) + locale_language_list('name'),
-    '#default_value' => $form['language']['#value'],
-    '#weight' => -10,
-    '#description' => t('A path alias set for a specific language will always be used when displaying this page in that language, and takes precedence over path aliases set for <em>All languages</em>.'),
   );
 }
 
@@ -527,6 +506,7 @@ function locale_language_types_info() {
  * Implements hook_language_negotiation_info().
  */
 function locale_language_negotiation_info() {
+  require_once DRUPAL_ROOT . '/includes/locale.inc';
   $file = 'includes/locale.inc';
   $providers = array();
 
@@ -648,18 +628,18 @@ function locale($string = NULL, $context = NULL, $langcode = NULL) {
     // perspective that is a really bad idea, so we have no user
     // interface for this. Be careful when turning this option off!
     if (variable_get('locale_cache_strings', 1) == 1) {
-      if ($cache = cache_get('locale:' . $langcode, 'cache')) {
+      if ($cache = cache()->get('locale:' . $langcode)) {
         $locale_t[$langcode] = $cache->data;
       }
       elseif (lock_acquire('locale_cache_' . $langcode)) {
         // Refresh database stored cache of translations for given language.
         // We only store short strings used in current version, to improve
         // performance and consume less memory.
-        $result = db_query("SELECT s.source, s.context, t.translation, t.language FROM {locales_source} s LEFT JOIN {locales_target} t ON s.lid = t.lid AND t.language = :language WHERE s.textgroup = 'default' AND s.version = :version AND LENGTH(s.source) < :length", array(':language' => $langcode, ':version' => VERSION, ':length' => variable_get('locale_cache_length', 75)));
+        $result = db_query("SELECT s.source, s.context, t.translation, t.language FROM {locales_source} s LEFT JOIN {locales_target} t ON s.lid = t.lid AND t.language = :language WHERE s.version = :version AND LENGTH(s.source) < :length", array(':language' => $langcode, ':version' => VERSION, ':length' => variable_get('locale_cache_length', 75)));
         foreach ($result as $data) {
           $locale_t[$langcode][$data->context][$data->source] = (empty($data->translation) ? TRUE : $data->translation);
         }
-        cache_set('locale:' . $langcode, $locale_t[$langcode]);
+        cache()->set('locale:' . $langcode, $locale_t[$langcode]);
         lock_release('locale_cache_' . $langcode);
       }
     }
@@ -669,7 +649,7 @@ function locale($string = NULL, $context = NULL, $langcode = NULL) {
   if (!isset($locale_t[$langcode][$context][$string])) {
 
     // We do not have this translation cached, so get it from the DB.
-    $translation = db_query("SELECT s.lid, t.translation, s.version FROM {locales_source} s LEFT JOIN {locales_target} t ON s.lid = t.lid AND t.language = :language WHERE s.source = :source AND s.context = :context AND s.textgroup = 'default'", array(
+    $translation = db_query("SELECT s.lid, t.translation, s.version FROM {locales_source} s LEFT JOIN {locales_target} t ON s.lid = t.lid AND t.language = :language WHERE s.source = :source AND s.context = :context", array(
       ':language' => $langcode,
       ':source' => $string,
       ':context' => (string) $context,
@@ -687,7 +667,7 @@ function locale($string = NULL, $context = NULL, $langcode = NULL) {
           ->fields(array('version' => VERSION))
           ->condition('lid', $translation->lid)
           ->execute();
-        cache_clear_all('locale:', 'cache', TRUE);
+        cache()->deletePrefix('locale:');
       }
     }
     else {
@@ -697,13 +677,12 @@ function locale($string = NULL, $context = NULL, $langcode = NULL) {
           'location' => request_uri(),
           'source' => $string,
           'context' => (string) $context,
-          'textgroup' => 'default',
           'version' => VERSION,
         ))
         ->execute();
       $locale_t[$langcode][$context][$string] = TRUE;
       // Clear locale cache so this string can be added in a later request.
-      cache_clear_all('locale:', 'cache', TRUE);
+      cache()->deletePrefix('locale:');
     }
   }
 
@@ -790,6 +769,51 @@ function locale_language_list($field = 'name', $all = FALSE) {
 }
 
 /**
+ * Delete a language.
+ *
+ * @param $langcode
+ *   Language code of the language to be deleted.
+ * @return
+ *   TRUE if language is successfully deleted. Otherwise FALSE.
+ */
+function locale_language_delete($langcode) {
+  $languages = language_list();
+  if (isset($languages[$langcode])) {
+    $language = $languages[$langcode];
+
+    module_invoke_all('locale_language_delete', $language);
+
+    // Remove translations first.
+    db_delete('locales_target')
+      ->condition('language', $language->language)
+      ->execute();
+
+    // Remove the language.
+    db_delete('languages')
+      ->condition('language', $language->language)
+      ->execute();
+
+    if ($language->enabled) {
+      variable_set('language_count', variable_get('language_count', 1) - 1);
+    }
+
+    drupal_static_reset('language_list');
+    _locale_invalidate_js($language->language);
+
+    // Changing the language settings impacts the interface:
+    cache('page')->flush();
+
+    // Clearing all locale cache from database
+    cache()->delete('locale:' . $language->language);
+
+    $variables = array('%locale' => $language->name);
+    watchdog('locale', 'The language %locale has been removed.', $variables);
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
  * Implements hook_modules_installed().
  */
 function locale_modules_installed($modules) {
@@ -817,7 +841,7 @@ function locale_themes_enabled($themes) {
  *   translations for.
  */
 function locale_system_update($components) {
-  include_once DRUPAL_ROOT . '/includes/locale.inc';
+  include_once drupal_get_path('module', 'locale') . '/locale.bulk.inc';
   if ($batch = locale_batch_by_component($components)) {
     batch_set($batch);
   }
@@ -915,11 +939,11 @@ function locale_css_alter(&$css) {
 }
 
  /**
- * Implement hook_library_alter().
+ * Implement hook_library_info_alter().
  *
  * Provides the language support for the jQuery UI Date Picker.
  */
-function locale_library_alter(&$libraries, $module) {
+function locale_library_info_alter(&$libraries, $module) {
   global $language;
   if ($module == 'system' && isset($libraries['system']['ui.datepicker'])) {
     $datepicker = drupal_get_path('module', 'locale') . '/locale.datepicker.js';

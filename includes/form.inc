@@ -76,7 +76,7 @@
  * workflow, see the
  * @link http://api.drupal.org/api/drupal/developer--topics--forms_api_reference.html Form API reference @endlink
  * and the
- * @link http://drupal.org/node/37775 Form API section of the handbook. @endlink
+ * @link http://drupal.org/node/37775 Form API documentation section. @endlink
  * In addition, there is a set of Form API tutorials in
  * @link form_example_tutorial.inc the Form Example Tutorial @endlink which
  * provide basics all the way up through multistep forms.
@@ -86,6 +86,7 @@
  * passed by reference to most functions, so they use it to communicate with
  * the form system and each other.
  *
+<<<<<<< HEAD
  * The $form_state keys are:
  * - build_info: Do not change; internal information stored by Form API to be
  *   able to build and rebuild the form:
@@ -153,6 +154,9 @@
  *   the 'values' array exclusively. The most common use of this key is for
  *   multi-step forms that need to clear some of the user input when setting
  *   'rebuild'.
+=======
+ * See drupal_build_form() for documentation of $form_state keys.
+>>>>>>> drupalorg
  */
 
 /**
@@ -211,22 +215,25 @@ function drupal_get_form($form_id) {
  *   persist across page requests when the 'cache' or 'rebuild' flag is set.
  *   The following parameters may be set in $form_state to affect how the form
  *   is rendered:
- *   - build_info: A keyed array of build information that is necessary to
- *     rebuild the form from cache when the original context may no longer be
- *     available:
- *     - args: An array of arguments to pass to the form builder.
+ *   - build_info: Internal. An associative array of information stored by Form
+ *     API that is necessary to build and rebuild the form from cache when the
+ *     original context may no longer be available:
+ *     - args: A list of arguments to pass to the form constructor.
  *     - files: An optional array defining include files that need to be loaded
  *       for building the form. Each array entry may be the path to a file or
  *       another array containing values for the parameters 'type', 'module' and
  *       'name' as needed by module_load_include(). The files listed here are
  *       automatically loaded by form_get_cache(). By default the current menu
- *       router item's 'file' definition is added, if existent.
+ *       router item's 'file' definition is added, if any. Use
+ *       form_load_include() to add include files from a form constructor.
+ *   - rebuild_info: Internal. Similar to 'build_info', but pertaining to
+ *     drupal_rebuild_form().
  *   - rebuild: Normally, after the entire form processing is completed and
- *     submit handlers ran, a form is considered to be done and
+ *     submit handlers have run, a form is considered to be done and
  *     drupal_redirect_form() will redirect the user to a new page using a GET
  *     request (so a browser refresh does not re-submit the form). However, if
  *     'rebuild' has been set to TRUE, then a new copy of the form is
- *     immediately built and sent to the browser; instead of a redirect. This is
+ *     immediately built and sent to the browser, instead of a redirect. This is
  *     used for multi-step forms, such as wizards and confirmation forms.
  *     Normally, $form_state['rebuild'] is set by a submit handler, since it is
  *     usually logic within a submit handler that determines whether a form is
@@ -234,32 +241,106 @@ function drupal_get_form($form_id) {
  *     set $form_state['rebuild'] to cause the form processing to bypass submit
  *     handlers and rebuild the form instead, even if there are no validation
  *     errors.
- *   - input: An array of input that corresponds to $_POST or $_GET, depending
- *     on the 'method' chosen (see below).
+ *   - redirect: Used to redirect the form on submission. It may either be a
+ *     string containing the destination URL, or an array of arguments
+ *     compatible with drupal_goto(). See drupal_redirect_form() for complete
+ *     information.
+ *   - no_redirect: If set to TRUE the form will NOT perform a drupal_goto(),
+ *     even if 'redirect' is set.
  *   - method: The HTTP form method to use for finding the input for this form.
  *     May be 'post' or 'get'. Defaults to 'post'. Note that 'get' method
  *     forms do not use form ids so are always considered to be submitted, which
  *     can have unexpected effects. The 'get' method should only be used on
- *     forms that do not change data, as that is exclusively the domain of post.
- *   - no_redirect: If set to TRUE the form will NOT perform a drupal_goto(),
- *     even if 'redirect' is set.
+ *     forms that do not change data, as that is exclusively the domain of
+ *     'post.'
  *   - cache: If set to TRUE the original, unprocessed form structure will be
- *     cached, which allows to rebuild the entire form from cache.
+ *     cached, which allows the entire form to be rebuilt from cache. A typical
+ *     form workflow involves two page requests; first, a form is built and
+ *     rendered for the user to fill in. Then, the user fills the form in and
+ *     submits it, triggering a second page request in which the form must be
+ *     built and processed. By default, $form and $form_state are built from
+ *     scratch during each of these page requests. Often, it is necessary or
+ *     desired to persist the $form and $form_state variables from the initial
+ *     page request to the one that processes the submission. 'cache' can be set
+ *     to TRUE to do this. A prominent example is an Ajax-enabled form, in which
+ *     ajax_process_form() enables form caching for all forms that include an
+ *     element with the #ajax property. (The Ajax handler has no way to build
+ *     the form itself, so must rely on the cached version.) Note that the
+ *     persistence of $form and $form_state happens automatically for
+ *     (multi-step) forms having the 'rebuild' flag set, regardless of the value
+ *     for 'cache'.
  *   - no_cache: If set to TRUE the form will NOT be cached, even if 'cache' is
  *     set.
+ *   - values: An associative array of values submitted to the form. The
+ *     validation functions and submit functions use this array for nearly all
+ *     their decision making. (Note that
+ *     @link http://api.drupal.org/api/drupal/developer--topics--forms_api_reference.html/7#tree #tree @endlink
+ *     determines whether the values are a flat array or an array whose structure
+ *     parallels the $form array.)
+ *   - input: The array of values as they were submitted by the user. These are
+ *     raw and unvalidated, so should not be used without a thorough
+ *     understanding of security implications. In almost all cases, code should
+ *     use the data in the 'values' array exclusively. The most common use of
+ *     this key is for multi-step forms that need to clear some of the user
+ *     input when setting 'rebuild'. The values correspond to $_POST or $_GET,
+ *     depending on the 'method' chosen.
  *   - always_process: If TRUE and the method is GET, a form_id is not
  *     necessary. This should only be used on RESTful GET forms that do NOT
  *     write data, as this could lead to security issues. It is useful so that
  *     searches do not need to have a form_id in their query arguments to
  *     trigger the search.
- *   - must_validate: Ordinarily, a form is only validated once but there are
+ *   - must_validate: Ordinarily, a form is only validated once, but there are
  *     times when a form is resubmitted internally and should be validated
  *     again. Setting this to TRUE will force that to happen. This is most
- *     likely to occur during AHAH or Ajax operations.
+ *     likely to occur during Ajax operations.
+ *   - programmed: If TRUE, the form was submitted programmatically, usually
+ *     invoked via drupal_form_submit(). Defaults to FALSE.
+ *   - process_input: Boolean flag. TRUE signifies correct form submission.
+ *     This is always TRUE for programmed forms coming from drupal_form_submit()
+ *     (see 'programmed' key), or if the form_id coming from the $_POST data is
+ *     set and matches the current form_id.
+ *   - submitted: If TRUE, the form has been submitted. Defaults to FALSE.
+ *   - executed: If TRUE, the form was submitted and has been processed and
+ *     executed. Defaults to FALSE.
+ *   - triggering_element: (read-only) The form element that triggered
+ *     submission. This is the same as the deprecated
+ *     $form_state['clicked_button']. It is the element that caused submission,
+ *     which may or may not be a button (in the case of Ajax forms). This key is
+ *     often used to distinguish between various buttons in a submit handler,
+ *     and is also used in Ajax handlers.
+ *   - has_file_element: Internal. If TRUE, there is a file element and Form API
+ *     will set the appropriate 'enctype' HTML attribute on the form.
+ *   - groups: Internal. An array containing references to fieldsets to render
+ *     them within vertical tabs.
+ *   - storage: $form_state['storage'] is not a special key, and no specific
+ *     support is provided for it in the Form API. By tradition it was
+ *     the location where application-specific data was stored for communication
+ *     between the submit, validation, and form builder functions, especially
+ *     in a multi-step-style form. Form implementations may use any key(s)
+ *     within $form_state (other than the keys listed here and other reserved
+ *     ones used by Form API internals) for this kind of storage. The
+ *     recommended way to ensure that the chosen key doesn't conflict with ones
+ *     used by the Form API or other modules is to use the module name as the
+ *     key name or a prefix for the key name. For example, the Node module uses
+ *     $form_state['node'] in node editing forms to store information about the
+ *     node being edited, and this information stays available across successive
+ *     clicks of the "Preview" button as well as when the "Save" button is
+ *     finally clicked.
+ *   - buttons: A list containing copies of all submit and button elements in
+ *     the form.
+ *   - complete_form: A reference to the $form variable containing the complete
+ *     form structure. #process, #after_build, #element_validate, and other
+ *     handlers being invoked on a form element may use this reference to access
+ *     other information in the form the element is contained in.
  *   - temporary: An array holding temporary data accessible during the current
- *     page request only. It may be used to temporary save any data that doesn't
- *     need to or shouldn't be cached during the whole form workflow, e.g. data
- *     that needs to be accessed during the current form build process only.
+ *     page request only. All $form_state properties that are not reserved keys
+ *     (see form_state_keys_no_cache()) persist throughout a multistep form
+ *     sequence. Form API provides this key for modules to communicate
+ *     information across form-related functions during a single page request.
+ *     It may be used to temporarily save data that does not need to or should
+ *     not be cached during the whole form workflow; e.g., data that needs to be
+ *     accessed during the current form build process only. There is no use-case
+ *     for this functionality in Drupal core.
  *   - wrapper_callback: Modules that wish to pre-populate certain forms with
  *     common elements, such as back/next/save buttons in multi-step form
  *     wizards, may define a form builder function name that returns a form
@@ -268,8 +349,8 @@ function drupal_get_form($form_id) {
  *     hook_forms() or have to invoke drupal_build_form() (instead of
  *     drupal_get_form()) on their own in a custom menu callback to prepare
  *     $form_state accordingly.
- *   Further $form_state properties controlling the redirection behavior after
- *   form submission may be found in drupal_redirect_form().
+ *   Information on how certain $form_state properties control redirection
+ *   behavior after form submission may be found in drupal_redirect_form().
  *
  * @return
  *   The rendered form. This function may also perform a redirect and hence may
@@ -472,12 +553,12 @@ function drupal_rebuild_form($form_id, &$form_state, $old_form = NULL) {
  * Fetch a form from cache.
  */
 function form_get_cache($form_build_id, &$form_state) {
-  if ($cached = cache_get('form_' . $form_build_id, 'cache_form')) {
+  if ($cached = cache('form')->get('form_' . $form_build_id)) {
     $form = $cached->data;
 
     global $user;
     if ((isset($form['#cache_token']) && drupal_valid_token($form['#cache_token'])) || (!isset($form['#cache_token']) && !$user->uid)) {
-      if ($cached = cache_get('form_state_' . $form_build_id, 'cache_form')) {
+      if ($cached = cache('form')->get('form_state_' . $form_build_id)) {
         // Re-populate $form_state for subsequent rebuilds.
         $form_state = $cached->data + $form_state;
 
@@ -511,12 +592,12 @@ function form_set_cache($form_build_id, $form, $form_state) {
     if ($GLOBALS['user']->uid) {
       $form['#cache_token'] = drupal_get_token();
     }
-    cache_set('form_' . $form_build_id, $form, 'cache_form', REQUEST_TIME + $expire);
+    cache('form')->set('form_' . $form_build_id, $form, REQUEST_TIME + $expire);
   }
 
   // Cache form state.
   if ($data = array_diff_key($form_state, array_flip(form_state_keys_no_cache()))) {
-    cache_set('form_state_' . $form_build_id, $data, 'cache_form', REQUEST_TIME + $expire);
+    cache('form')->set('form_state_' . $form_build_id, $data, REQUEST_TIME + $expire);
   }
 }
 
@@ -537,7 +618,7 @@ function form_state_keys_no_cache() {
     'buttons',
     'triggering_element',
     'clicked_button',
-    'complete form',
+    'complete_form',
     'groups',
     'input',
     'method',
@@ -835,8 +916,8 @@ function drupal_process_form($form_id, &$form, &$form_state) {
       // here, as we've finished with them. The in-memory copies are still
       // here, though.
       if (!variable_get('cache', 0) && !empty($form_state['values']['form_build_id'])) {
-        cache_clear_all('form_' . $form_state['values']['form_build_id'], 'cache_form');
-        cache_clear_all('form_state_' . $form_state['values']['form_build_id'], 'cache_form');
+        cache('form')->delete('form_' . $form_state['values']['form_build_id']);
+        cache('form')->delete('form_state_' . $form_state['values']['form_build_id']);
       }
 
       // If batches were set in the submit handlers, we process them now,
@@ -907,7 +988,7 @@ function drupal_process_form($form_id, &$form, &$form_state) {
   // have set $form_state['cache'] to indicate that the form and form state
   // shall be cached. But the form may only be cached if the 'no_cache' property
   // is not set to TRUE. Only cache $form as it was prior to form_builder(),
-  // because form_builder() must run for each request to accomodate new user
+  // because form_builder() must run for each request to accommodate new user
   // input. Rebuilt forms are not cached here, because drupal_rebuild_form()
   // already takes care of that.
   if (!$form_state['rebuild'] && $form_state['cache'] && empty($form_state['no_cache'])) {
@@ -1082,8 +1163,12 @@ function drupal_validate_form($form_id, &$form, &$form_state) {
   // matches the current user's session.
   if (isset($form['#token'])) {
     if (!drupal_valid_token($form_state['values']['form_token'], $form['#token'])) {
+      $path = current_path();
+      $query = drupal_get_query_parameters();
+      $url = url($path, array('query' => $query));
+
       // Setting this error will cause the form to fail validation.
-      form_set_error('form_token', t('This form is outdated. Reload the page and try again. Contact the site administrator if the problem persists.'));
+      form_set_error('form_token', t('The form has become outdated. Copy any unsaved work in the form below and then <a href="@link">reload this page</a>.', array('@link' => $url)));
     }
   }
 
@@ -1358,7 +1443,7 @@ function _form_validate(&$elements, &$form_state, $form_id = NULL) {
     // #value data.
     elseif (isset($elements['#element_validate'])) {
       foreach ($elements['#element_validate'] as $function) {
-        $function($elements, $form_state, $form_state['complete form']);
+        $function($elements, $form_state, $form_state['complete_form']);
       }
     }
     $elements['#validated'] = TRUE;
@@ -1718,7 +1803,7 @@ function form_builder($form_id, &$element, &$form_state) {
     // Store a reference to the complete form in $form_state prior to building
     // the form. This allows advanced #process and #after_build callbacks to
     // perform changes elsewhere in the form.
-    $form_state['complete form'] = &$element;
+    $form_state['complete_form'] = &$element;
 
     // Set a flag if we have a correct form submission. This is always TRUE for
     // programmed forms coming from drupal_form_submit(), or if the form_id coming
@@ -1745,7 +1830,7 @@ function form_builder($form_id, &$element, &$form_state) {
   // checkboxes and files.
   if (isset($element['#process']) && !$element['#processed']) {
     foreach ($element['#process'] as $process) {
-      $element = $process($element, $form_state, $form_state['complete form']);
+      $element = $process($element, $form_state, $form_state['complete_form']);
     }
     $element['#processed'] = TRUE;
   }
@@ -1925,7 +2010,7 @@ function _form_builder_handle_input_element($form_id, &$element, &$form_state) {
   // drupal_form_submit() must not be able to get around this. Forms that set
   // #access=FALSE on an element usually allow access for some users, so forms
   // submitted with drupal_form_submit() may bypass access restriction and be
-  // treated as high-privelege users instead.
+  // treated as high-privilege users instead.
   $process_input = empty($element['#disabled']) && ($form_state['programmed'] || ($form_state['process_input'] && (!isset($element['#access']) || $element['#access'])));
 
   // Set the element's #value property.
@@ -2796,7 +2881,17 @@ function password_confirm_validate($element, &$element_state) {
  */
 function theme_date($variables) {
   $element = $variables['element'];
-  return '<div class="container-inline">' . drupal_render_children($element) . '</div>';
+
+  $attributes = array();
+  if (isset($element['#id'])) {
+    $attributes['id'] = $element['#id'];
+  }
+  if (!empty($element['#attributes']['class'])) {
+    $attributes['class'] = (array) $element['#attributes']['class'];
+  }
+  $attributes['class'][] = 'container-inline';
+
+  return '<div' . drupal_attributes($attributes) . '>' . drupal_render_children($element) . '</div>';
 }
 
 /**
@@ -3330,7 +3425,7 @@ function form_process_machine_name($element, &$form_state) {
   // complete form in $form_state. By reference, because we need to append
   // a #field_suffix that will hold the live preview.
   $key_exists = NULL;
-  $source = drupal_array_get_nested_value($form_state['complete form'], $element['#machine_name']['source'], $key_exists);
+  $source = drupal_array_get_nested_value($form_state['complete_form'], $element['#machine_name']['source'], $key_exists);
   if (!$key_exists) {
     return $element;
   }
@@ -3342,7 +3437,7 @@ function form_process_machine_name($element, &$form_state) {
   $source['#field_suffix'] .= ' <small id="' . $suffix_id . '">&nbsp;</small>';
 
   $parents = array_merge($element['#machine_name']['source'], array('#field_suffix'));
-  drupal_array_set_nested_value($form_state['complete form'], $parents, $source['#field_suffix']);
+  drupal_array_set_nested_value($form_state['complete_form'], $parents, $source['#field_suffix']);
 
   $element['#machine_name']['suffix'] = '#' . $suffix_id;
 
@@ -3650,14 +3745,14 @@ function theme_hidden($variables) {
  *   An associative array containing:
  *   - element: An associative array containing the properties of the element.
  *     Properties used: #title, #value, #description, #size, #maxlength,
- *     #required, #attributes, #autocomplete_path.
+ *     #placeholder, #required, #attributes, #autocomplete_path.
  *
  * @ingroup themeable
  */
 function theme_textfield($variables) {
   $element = $variables['element'];
   $element['#attributes']['type'] = 'text';
-  element_set_attributes($element, array('id', 'name', 'value', 'size', 'maxlength'));
+  element_set_attributes($element, array('id', 'name', 'value', 'size', 'maxlength', 'placeholder'));
   _form_set_class($element, array('form-text'));
 
   $extra = '';
@@ -3708,14 +3803,14 @@ function theme_form($variables) {
  * @param $variables
  *   An associative array containing:
  *   - element: An associative array containing the properties of the element.
- *     Properties used: #title, #value, #description, #rows, #cols, #required,
- *     #attributes
+ *     Properties used: #title, #value, #description, #rows, #cols,
+ *     #placeholder, #required, #attributes
  *
  * @ingroup themeable
  */
 function theme_textarea($variables) {
   $element = $variables['element'];
-  element_set_attributes($element, array('id', 'name', 'cols', 'rows'));
+  element_set_attributes($element, array('id', 'name', 'rows', 'cols', 'placeholder'));
   _form_set_class($element, array('form-textarea'));
 
   $wrapper_attributes = array(
@@ -3741,14 +3836,14 @@ function theme_textarea($variables) {
  *   An associative array containing:
  *   - element: An associative array containing the properties of the element.
  *     Properties used: #title, #value, #description, #size, #maxlength,
- *     #required, #attributes.
+ *     #placeholder, #required, #attributes.
  *
  * @ingroup themeable
  */
 function theme_password($variables) {
   $element = $variables['element'];
   $element['#attributes']['type'] = 'password';
-  element_set_attributes($element, array('id', 'name', 'size', 'maxlength'));
+  element_set_attributes($element, array('id', 'name', 'size', 'maxlength', 'placeholder'));
   _form_set_class($element, array('form-text'));
 
   return '<input' . drupal_attributes($element['#attributes']) . ' />';
@@ -3917,7 +4012,7 @@ function theme_form_required_marker($variables) {
     'class' => 'form-required',
     'title' => $t('This field is required.'),
   );
-  return '<span' . drupal_attributes($attributes) . '>*</span>';
+  return '<abbr' . drupal_attributes($attributes) . '>*</abbr>';
 }
 
 /**

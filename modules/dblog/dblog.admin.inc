@@ -21,10 +21,10 @@ function dblog_overview() {
     WATCHDOG_INFO      => 'dblog-info',
     WATCHDOG_NOTICE    => 'dblog-notice',
     WATCHDOG_WARNING   => 'dblog-warning',
-    WATCHDOG_ERROR     => 'dblog-error',
-    WATCHDOG_CRITICAL  => 'dblog-critical',
+    WATCHDOG_ERROR       => 'dblog-error',
+    WATCHDOG_CRITICAL      => 'dblog-critical',
     WATCHDOG_ALERT     => 'dblog-alert',
-    WATCHDOG_EMERGENCY => 'dblog-emerg',
+    WATCHDOG_EMERGENCY     => 'dblog-emerg',
   );
 
   $build['dblog_filter_form'] = drupal_get_form('dblog_filter_form');

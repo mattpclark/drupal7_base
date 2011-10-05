@@ -60,6 +60,7 @@ function hook_hook_info_alter(&$hooks) {
 }
 
 /**
+<<<<<<< HEAD
  * Inform the base system and the Field API about one or more entity types.
  *
  * Inform the system about one or more entity types (i.e., object types that
@@ -446,6 +447,8 @@ function hook_entity_view_alter(&$build, $type) {
 }
 
 /**
+=======
+>>>>>>> drupalorg
  * Define administrative paths.
  *
  * Modules may specify whether or not the paths they define in hook_menu() are
@@ -492,6 +495,7 @@ function hook_admin_paths_alter(&$paths) {
 }
 
 /**
+<<<<<<< HEAD
  * Act on entities as they are being prepared for view.
  *
  * Allows you to operate on multiple entities as they are being prepared for
@@ -516,6 +520,8 @@ function hook_entity_prepare_view($entities, $type, $langcode) {
 }
 
 /**
+=======
+>>>>>>> drupalorg
  * Perform periodic actions.
  *
  * Modules that require some commands to be executed periodically can
@@ -544,7 +550,7 @@ function hook_cron() {
 
   // Long-running operation example, leveraging a queue:
   // Fetch feeds from other sites.
-  $result = db_query('SELECT * FROM {aggregator_feed} WHERE checked + refresh < :time AND refresh != :never', array(
+  $result = db_query('SELECT * FROM {aggregator_feed} WHERE checked + refresh < :time AND refresh <> :never', array(
     ':time' => REQUEST_TIME,
     ':never' => AGGREGATOR_CLEAR_NEVER,
   ));
@@ -672,8 +678,8 @@ function hook_element_info_alter(&$type) {
  * page logging and specialized cleanup. This hook MUST NOT print anything.
  *
  * Only use this hook if your code must run even for cached page views.
- * If you have code which must run once on all non cached pages, use
- * hook_init instead. Thats the usual case. If you implement this hook
+ * If you have code which must run once on all non-cached pages, use
+ * hook_init() instead. That is the usual case. If you implement this hook
  * and see an error like 'Call to undefined function', it is likely that
  * you are depending on the presence of a module which has not been loaded yet.
  * It is not loaded because Drupal is still in bootstrap mode.
@@ -736,11 +742,11 @@ function hook_js_alter(&$javascript) {
  * @return
  *   An array defining libraries associated with a module.
  *
- * @see system_library()
+ * @see system_library_info()
  * @see drupal_add_library()
  * @see drupal_get_library()
  */
-function hook_library() {
+function hook_library_info() {
   // Library One.
   $libraries['library-1'] = array(
     'title' => 'Library One',
@@ -794,9 +800,9 @@ function hook_library() {
  * @param $module
  *   The name of the module that registered the libraries.
  *
- * @see hook_library()
+ * @see hook_library_info()
  */
-function hook_library_alter(&$libraries, $module) {
+function hook_library_info_alter(&$libraries, $module) {
   // Update Farbtastic to version 2.0.
   if ($module == 'system' && isset($libraries['farbtastic'])) {
     // Verify existing version is older than the one we are updating to.
@@ -1053,24 +1059,24 @@ function hook_menu_get_item_alter(&$router_item, $path, $original_map) {
  * MENU_LOCAL_TASK. Example:
  * @code
  * // Make "Foo settings" appear on the admin Config page
- * $items['admin/config/foo'] = array(
+ * $items['admin/config/system/foo'] = array(
  *   'title' => 'Foo settings',
  *   'type' => MENU_NORMAL_ITEM,
  *   // Page callback, etc. need to be added here.
  * );
- * // Make "Global settings" the main tab on the "Foo settings" page
- * $items['admin/config/foo/global'] = array(
- *   'title' => 'Global settings',
+ * // Make "Tab 1" the main tab on the "Foo settings" page
+ * $items['admin/config/system/foo/tab1'] = array(
+ *   'title' => 'Tab 1',
  *   'type' => MENU_DEFAULT_LOCAL_TASK,
  *   // Access callback, page callback, and theme callback will be inherited
- *   // from 'admin/config/foo', if not specified here to override.
+ *   // from 'admin/config/system/foo', if not specified here to override.
  * );
- * // Make an additional tab called "Node settings" on "Foo settings"
- * $items['admin/config/foo/node'] = array(
- *   'title' => 'Node settings',
+ * // Make an additional tab called "Tab 2" on "Foo settings"
+ * $items['admin/config/system/foo/tab2'] = array(
+ *   'title' => 'Tab 2',
  *   'type' => MENU_LOCAL_TASK,
  *   // Page callback and theme callback will be inherited from
- *   // 'admin/config/foo', if not specified here to override.
+ *   // 'admin/config/system/foo', if not specified here to override.
  *   // Need to add access callback or access arguments.
  * );
  * @endcode
@@ -1202,15 +1208,15 @@ function hook_menu_get_item_alter(&$router_item, $path, $original_map) {
  * http://drupal.org/node/102338.
  */
 function hook_menu() {
-  $items['blog'] = array(
-    'title' => 'blogs',
-    'page callback' => 'blog_page',
+  $items['example'] = array(
+    'title' => 'Example Page',
+    'page callback' => 'example_page',
     'access arguments' => array('access content'),
     'type' => MENU_SUGGESTED_ITEM,
   );
-  $items['blog/feed'] = array(
-    'title' => 'RSS feed',
-    'page callback' => 'blog_feed',
+  $items['example/feed'] = array(
+    'title' => 'Example RSS feed',
+    'page callback' => 'example_feed',
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
@@ -1539,7 +1545,7 @@ function hook_menu_contextual_links_alter(&$links, $router_item, $root_path) {
  * page. Some legacy modules may not return structured content at all: their
  * pre-rendered markup will be located in $page['content']['main']['#markup'].
  *
- * Pages built by Drupal's core Node and Blog modules use a standard structure:
+ * Pages built by Drupal's core Node module use a standard structure:
  *
  * @code
  *   // Node body.
@@ -1744,32 +1750,36 @@ function hook_forms($form_id, $args) {
 }
 
 /**
- * Perform setup tasks. See also, hook_init.
+ * Perform setup tasks for all page requests.
  *
  * This hook is run at the beginning of the page request. It is typically
- * used to set up global parameters which are needed later in the request.
+ * used to set up global parameters that are needed later in the request.
  *
- * Only use this hook if your code must run even for cached page views.This hook
- * is called before modules or most include files are loaded into memory.
+ * Only use this hook if your code must run even for cached page views. This
+ * hook is called before modules or most include files are loaded into memory.
  * It happens while Drupal is still in bootstrap mode.
+ *
+ * @see hook_init()
  */
 function hook_boot() {
-  // we need user_access() in the shutdown function. make sure it gets loaded
+  // We need user_access() in the shutdown function. Make sure it gets loaded.
   drupal_load('module', 'user');
   drupal_register_shutdown_function('devel_shutdown');
 }
 
 /**
- * Perform setup tasks. See also, hook_boot.
+ * Perform setup tasks for non-cached page requests.
  *
  * This hook is run at the beginning of the page request. It is typically
- * used to set up global parameters which are needed later in the request.
- * when this hook is called, all modules are already loaded in memory.
+ * used to set up global parameters that are needed later in the request.
+ * When this hook is called, all modules are already loaded in memory.
  *
  * This hook is not run on cached pages.
  *
  * To add CSS or JS that should be present on all pages, modules should not
  * implement this hook, but declare these files in their .info file.
+ *
+ * @see hook_boot()
  */
 function hook_init() {
   // Since this file should only be loaded on the front page, it cannot be
@@ -2246,14 +2256,14 @@ function hook_xmlrpc_alter(&$methods) {
  *   - ip: The IP address where the request for the page came from.
  *   - timestamp: The UNIX timestamp of the date/time the event occurred
  *   - severity: One of the following values as defined in RFC 3164 http://www.faqs.org/rfcs/rfc3164.html
- *     WATCHDOG_EMERGENCY Emergency: system is unusable
- *     WATCHDOG_ALERT     Alert: action must be taken immediately
- *     WATCHDOG_CRITICAL  Critical: critical conditions
- *     WATCHDOG_ERROR     Error: error conditions
- *     WATCHDOG_WARNING   Warning: warning conditions
- *     WATCHDOG_NOTICE    Notice: normal but significant condition
- *     WATCHDOG_INFO      Informational: informational messages
- *     WATCHDOG_DEBUG     Debug: debug-level messages
+ *     WATCHDOG_EMERGENCY    Emergency: system is unusable
+ *     WATCHDOG_ALERT    Alert: action must be taken immediately
+ *     WATCHDOG_CRITICAL     Critical: critical conditions
+ *     WATCHDOG_ERROR      Error: error conditions
+ *     WATCHDOG_WARNING  Warning: warning conditions
+ *     WATCHDOG_NOTICE   Notice: normal but significant condition
+ *     WATCHDOG_INFO     Informational: informational messages
+ *     WATCHDOG_DEBUG    Debug: debug-level messages
  *   - link: an optional link provided by the module that called the watchdog() function.
  *   - message: The text of the message to be logged.
  */
@@ -2261,10 +2271,10 @@ function hook_watchdog(array $log_entry) {
   global $base_url, $language;
 
   $severity_list = array(
-    WATCHDOG_EMERGENCY => t('Emergency'),
+    WATCHDOG_EMERGENCY     => t('Emergency'),
     WATCHDOG_ALERT     => t('Alert'),
-    WATCHDOG_CRITICAL  => t('Critical'),
-    WATCHDOG_ERROR     => t('Error'),
+    WATCHDOG_CRITICALI     => t('Critical'),
+    WATCHDOG_ERROR       => t('Error'),
     WATCHDOG_WARNING   => t('Warning'),
     WATCHDOG_NOTICE    => t('Notice'),
     WATCHDOG_INFO      => t('Info'),
@@ -2377,17 +2387,41 @@ function hook_mail($key, &$message, $params) {
 /**
  * Add a list of cache tables to be cleared.
  *
- * This hook allows your module to add cache table names to the list of cache
- * tables that will be cleared by the Clear button on the Performance page or
+ * This hook allows your module to add cache bins to the list of cache bins
+ * that will be cleared by the Clear button on the Performance page or
  * whenever drupal_flush_all_caches is invoked.
  *
  * @return
- *   An array of cache table names.
+ *   An array of cache bins.
  *
  * @see drupal_flush_all_caches()
  */
 function hook_flush_caches() {
-  return array('cache_example');
+  return array('example');
+}
+
+/**
+ * Perform necessary actions before modules are installed.
+ *
+ * This function allows all modules to react prior to a module being installed.
+ *
+ * @param $modules
+ *   An array of modules about to be installed.
+ */
+function hook_modules_preinstall($modules) {
+  mymodule_cache_clear();
+}
+
+/**
+ * Perform necessary actions before modules are enabled.
+ *
+ * This function allows all modules to react prior to a module being enabled.
+ *
+ * @param $module
+ *   An array of modules about to be enabled.
+ */
+function hook_modules_preenable($modules) {
+  mymodule_cache_clear();
 }
 
 /**
@@ -2627,17 +2661,21 @@ function hook_file_presave($file) {
 /**
  * Respond to a file being added.
  *
- * This hook is called before a file has been added to the database. The hook
+ * This hook is called after a file has been added to the database. The hook
  * doesn't distinguish between files created as a result of a copy or those
  * created by an upload.
  *
  * @param $file
- *   The file that is about to be saved.
+ *   The file that has been added.
  *
  * @see file_save()
  */
 function hook_file_insert($file) {
-
+  // Add a message to the log, if the file is a jpg
+  $validate = file_validate_extensions($file, 'jpg');
+  if (empty($validate)) {
+    watchdog('file', 'A jpg has been added.');
+  }
 }
 
 /**
@@ -3060,11 +3098,13 @@ function hook_query_TAG_alter(QueryAlterableInterface $query) {
  * If the module implements hook_schema(), the database tables will
  * be created before this hook is fired.
  *
- * This hook will only be called the first time a module is enabled or after it
- * is re-enabled after being uninstalled. The module's schema version will be
- * set to the module's greatest numbered update hook. Because of this, anytime a
- * hook_update_N() is added to the module, this function needs to be updated to
- * reflect the current version of the database schema.
+ * Implementations of this hook are by convention declared in the module's
+ * .install file. The hook will only be called the first time a module is
+ * enabled or after it is re-enabled after being uninstalled. The module's
+ * schema version will be set to the module's greatest numbered update hook.
+ * Because of this, any time a hook_update_N() is added to the module, this
+ * function needs to be updated to reflect the current version of the database
+ * schema.
  *
  * See the Schema API documentation at
  * @link http://drupal.org/node/146843 http://drupal.org/node/146843 @endlink
@@ -3239,21 +3279,21 @@ function hook_update_N(&$sandbox) {
  * @see hook_update_N()
  */
 function hook_update_dependencies() {
-  // Indicate that the mymodule_update_7000() function provided by this module
-  // must run after the another_module_update_7002() function provided by the
+  // Indicate that the mymodule_update_8000() function provided by this module
+  // must run after the another_module_update_8002() function provided by the
   // 'another_module' module.
-  $dependencies['mymodule'][7000] = array(
-    'another_module' => 7002,
+  $dependencies['mymodule'][8000] = array(
+    'another_module' => 8002,
   );
-  // Indicate that the mymodule_update_7001() function provided by this module
-  // must run before the yet_another_module_update_7004() function provided by
+  // Indicate that the mymodule_update_8001() function provided by this module
+  // must run before the yet_another_module_update_8004() function provided by
   // the 'yet_another_module' module. (Note that declaring dependencies in this
   // direction should be done only in rare situations, since it can lead to the
   // following problem: If a site has already run the yet_another_module
   // module's database updates before it updates its codebase to pick up the
   // newest mymodule code, then the dependency declared here will be ignored.)
-  $dependencies['yet_another_module'][7004] = array(
-    'mymodule' => 7001,
+  $dependencies['yet_another_module'][8004] = array(
+    'mymodule' => 8001,
   );
   return $dependencies;
 }
@@ -3290,9 +3330,18 @@ function hook_update_last_removed() {
  * The module should not remove its entry from the {system} table. Database
  * tables defined by hook_schema() will be removed automatically.
  *
- * The uninstall hook will fire when the module gets uninstalled but before the
- * module's database tables are removed, allowing your module to query its own
- * tables during this routine.
+ * The uninstall hook must be implemented in the module's .install file. It
+ * will fire when the module gets uninstalled but before the module's database
+ * tables are removed, allowing your module to query its own tables during
+ * this routine.
+ *
+ * When hook_uninstall() is called, your module will already be disabled, so
+ * its .module file will not be automatically included. If you need to call API
+ * functions from your .module file in this hook, use drupal_load() to make
+ * them available. (Keep this usage to a minimum, though, especially when
+ * calling API functions that invoke hooks, or API functions from modules
+ * listed as dependencies, since these may not be available or work as expected
+ * when the module is disabled.)
  *
  * When hook_uninstall() is called, your module will already be disabled, so
  * its .module file will not be automatically included. If you need to call API
@@ -4383,7 +4432,7 @@ function hook_updater_info_alter(&$updaters) {
  *   The associative array of countries keyed by ISO 3166-1 country code.
  *
  * @see country_get_list()
- * @see _country_get_predefined_list()
+ * @see standard_country_list()
  */
 function hook_countries_alter(&$countries) {
   // Elbonia is now independent, so add it to the country list.
@@ -4418,7 +4467,7 @@ function hook_menu_site_status_alter(&$menu_site_status, $path) {
 /**
  * Register information about FileTransfer classes provided by a module.
  *
- * The FileTransfer class allows transfering files over a specific type of
+ * The FileTransfer class allows transferring files over a specific type of
  * connection. Core provides classes for FTP and SSH. Contributed modules are
  * free to extend the FileTransfer base class to add other connection types,
  * and if these classes are registered via hook_filetransfer_info(), those

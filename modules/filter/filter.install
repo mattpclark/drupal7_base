@@ -147,6 +147,7 @@ function filter_install() {
   // Set the fallback format to plain text.
   variable_set('filter_fallback_format', $plain_text_format->format);
 }
+<<<<<<< HEAD
 
 /**
  * Implements hook_update_dependencies().
@@ -492,3 +493,5 @@ function filter_update_7010() {
 /**
  * @} End of "addtogroup updates-6.x-to-7.x"
  */
+=======
+>>>>>>> drupalorg

@@ -187,6 +187,7 @@ function block_install() {
 }
 
 /**
+<<<<<<< HEAD
  * Implements hook_update_dependencies().
  */
 function block_update_dependencies() {
@@ -202,10 +203,15 @@ function block_update_dependencies() {
 
 /**
  * @addtogroup updates-6.x-to-7.x
+=======
+ * @defgroup updates-7.x-to-8.x Updates from 7.x to 8.x
+>>>>>>> drupalorg
  * @{
+ * Update functions from 7.x to 8.x.
  */
 
 /**
+<<<<<<< HEAD
  * Set system.weight to a low value for block module.
  *
  * Block should go first so that other modules can alter its output
@@ -446,17 +452,16 @@ function block_update_7006() {
 
 /**
  * Change {block_custom}.format into varchar.
+=======
+ * Block cache is always enabled in 8.x.
+>>>>>>> drupalorg
  */
-function block_update_7007() {
-  db_change_field('block_custom', 'format', 'format', array(
-    'type' => 'varchar',
-    'length' => 255,
-    'not null' => FALSE,
-    'description' => 'The {filter_format}.format of the block body.',
-  ));
+function block_update_8000() {
+  variable_del('block_cache');
 }
 
 /**
+<<<<<<< HEAD
  * Update database to match Drupal 7 schema.
  */
 function block_update_7008() {
@@ -465,4 +470,8 @@ function block_update_7008() {
 
 /**
  * @} End of "addtogroup updates-6.x-to-7.x"
+=======
+ * @} End of "defgroup updates-7.x-to-8.x"
+ * The next series of updates should start at 9000.
+>>>>>>> drupalorg
  */

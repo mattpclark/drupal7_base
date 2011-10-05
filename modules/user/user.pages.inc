@@ -76,9 +76,11 @@ function user_pass_submit($form, &$form_state) {
 
   $account = $form_state['values']['account'];
   // Mail one time login URL and instructions using current language.
-  _user_mail_notify('password_reset', $account, $language);
-  watchdog('user', 'Password reset instructions mailed to %name at %email.', array('%name' => $account->name, '%email' => $account->mail));
-  drupal_set_message(t('Further instructions have been sent to your e-mail address.'));
+  $mail = _user_mail_notify('password_reset', $account, $language);
+  if (!empty($mail)) {
+    watchdog('user', 'Password reset instructions mailed to %name at %email.', array('%name' => $account->name, '%email' => $account->mail));
+    drupal_set_message(t('Further instructions have been sent to your e-mail address.'));
+  }
 
   $form_state['redirect'] = 'user';
   return;
@@ -222,6 +224,7 @@ function template_preprocess_user_profile_item(&$variables) {
  */
 function template_preprocess_user_profile_category(&$variables) {
   $variables['title'] = check_plain($variables['element']['#title']);
+  $variables['classes_array'][] = 'user-profile-category-' . drupal_html_class($variables['title']);
   $variables['profile_items'] = $variables['element']['#children'];
   $variables['attributes'] = '';
   if (isset($variables['element']['#attributes'])) {

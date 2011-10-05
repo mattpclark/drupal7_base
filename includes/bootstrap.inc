@@ -8,17 +8,21 @@
 /**
  * The current system version.
  */
+<<<<<<< HEAD
 define('VERSION', '7.8');
+=======
+define('VERSION', '8.0-dev');
+>>>>>>> drupalorg
 
 /**
  * Core API compatibility.
  */
-define('DRUPAL_CORE_COMPATIBILITY', '7.x');
+define('DRUPAL_CORE_COMPATIBILITY', '8.x');
 
 /**
  * Minimum supported version of PHP.
  */
-define('DRUPAL_MINIMUM_PHP', '5.2.4');
+define('DRUPAL_MINIMUM_PHP', '5.3.2');
 
 /**
  * Minimum recommended value of PHP memory_limit.
@@ -28,7 +32,7 @@ define('DRUPAL_MINIMUM_PHP_MEMORY_LIMIT', '32M');
 /**
  * Indicates that the item should never be removed unless explicitly selected.
  *
- * The item may be removed using cache_clear_all() with a cache ID.
+ * The item may be removed using cache()->delete() with a cache ID.
  */
 define('CACHE_PERMANENT', 0);
 
@@ -283,12 +287,20 @@ define('DRUPAL_PHP_FUNCTION_PATTERN', '[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*'
 abstract class DrupalCacheArray implements ArrayAccess {
 
   /**
+<<<<<<< HEAD
    * A cid to pass to cache_set() and cache_get().
+=======
+   * A cid to pass to cache()->set() and cache()->get().
+>>>>>>> drupalorg
    */
   private $cid;
 
   /**
+<<<<<<< HEAD
    * A bin to pass to cache_set() and cache_get().
+=======
+   * A bin to pass to cache()->set() and cache()->get().
+>>>>>>> drupalorg
    */
   private $bin;
 
@@ -314,7 +326,11 @@ abstract class DrupalCacheArray implements ArrayAccess {
     $this->cid = $cid;
     $this->bin = $bin;
 
+<<<<<<< HEAD
     if ($cached = cache_get($this->cid, $this->bin)) {
+=======
+    if ($cached = cache($bin)->get($this->cid)) {
+>>>>>>> drupalorg
      $this->storage = $cached->data;
     }
   }
@@ -391,10 +407,17 @@ abstract class DrupalCacheArray implements ArrayAccess {
     // To implement locking for cache misses, override __construct().
     $lock_name = $cid . ':' . $bin;
     if (!$lock || lock_acquire($lock_name)) {
+<<<<<<< HEAD
       if ($cached = cache_get($cid, $bin)) {
         $data = $cached->data + $data;
       }
       cache_set($cid, $data, $bin);
+=======
+      if ($cached = cache($bin)->get($cid)) {
+        $data = $cached->data + $data;
+      }
+      cache($bin)->set($cid, $data);
+>>>>>>> drupalorg
       if ($lock) {
         lock_release($lock_name);
       }
@@ -489,6 +512,7 @@ function timer_stop($name) {
  * With a site located at http://www.example.com:8080/mysite/test/, the file,
  * settings.php, is searched for in the following directories:
  *
+<<<<<<< HEAD
  *  1. $confdir/8080.www.example.com.mysite.test
  *  2. $confdir/www.example.com.mysite.test
  *  3. $confdir/example.com.mysite.test
@@ -503,8 +527,24 @@ function timer_stop($name) {
  * 10. $confdir/www.example.com
  * 11. $confdir/example.com
  * 12. $confdir/com
+=======
+ * - $confdir/8080.www.example.com.mysite.test
+ * - $confdir/www.example.com.mysite.test
+ * - $confdir/example.com.mysite.test
+ * - $confdir/com.mysite.test
  *
- * 13. $confdir/default
+ * - $confdir/8080.www.example.com.mysite
+ * - $confdir/www.example.com.mysite
+ * - $confdir/example.com.mysite
+ * - $confdir/com.mysite
+ *
+ * - $confdir/8080.www.example.com
+ * - $confdir/www.example.com
+ * - $confdir/example.com
+ * - $confdir/com
+>>>>>>> drupalorg
+ *
+ * - $confdir/default
  *
  * If a file named sites.php is present in the $confdir, it will be loaded
  * prior to scanning for directories. It should define an associative array
@@ -549,6 +589,30 @@ function conf_path($require_settings = TRUE, $reset = FALSE) {
     return $conf;
   }
 
+  $script_name = $_SERVER['SCRIPT_NAME'];
+  if (!$script_name) {
+    $script_name = $_SERVER['SCRIPT_FILENAME'];
+  }
+  $http_host = $_SERVER['HTTP_HOST'];
+  $conf = find_conf_path($http_host, $script_name, $require_settings);
+  return $conf;
+}
+
+/**
+ * Finds the appropriate configuration directory for a given host and path.
+ *
+ * @param $http_host
+ *   The hostname and optional port number, e.g. "www.example.com" or
+ *   "www.example.com:8080".
+ * @param $script_name
+ *   The part of the url following the hostname, including the leading slash.
+ *
+ * @return
+ *   The path of the matching configuration directory.
+ *
+ * @see conf_path()
+ */
+function find_conf_path($http_host, $script_name, $require_settings = TRUE) {
   $confdir = 'sites';
 
   $sites = array();
@@ -557,8 +621,8 @@ function conf_path($require_settings = TRUE, $reset = FALSE) {
     include(DRUPAL_ROOT . '/' . $confdir . '/sites.php');
   }
 
-  $uri = explode('/', $_SERVER['SCRIPT_NAME'] ? $_SERVER['SCRIPT_NAME'] : $_SERVER['SCRIPT_FILENAME']);
-  $server = explode('.', implode('.', array_reverse(explode(':', rtrim($_SERVER['HTTP_HOST'], '.')))));
+  $uri = explode('/', $script_name);
+  $server = explode('.', implode('.', array_reverse(explode(':', rtrim($http_host, '.')))));
   for ($i = count($uri) - 1; $i > 0; $i--) {
     for ($j = count($server); $j > 0; $j--) {
       $dir = implode('.', array_slice($server, -$j)) . implode('.', array_slice($uri, 0, $i));
@@ -672,8 +736,8 @@ function drupal_environment_initialize() {
   // e.g. "&" or "%" that have special meanings in URLs and must be encoded.
   $_GET['q'] = request_path();
 
-  // Enforce E_ALL, but allow users to set levels not part of E_ALL.
-  error_reporting(E_ALL | error_reporting());
+  // Enforce E_STRICT, but allow users to set levels not part of E_STRICT.
+  error_reporting(E_STRICT | E_ALL | error_reporting());
 
   // Override PHP settings required for Drupal to work properly.
   // sites/default/default.settings.php contains more runtime settings.
@@ -899,7 +963,7 @@ function drupal_get_filename($type, $name, $filename = NULL) {
 function variable_initialize($conf = array()) {
   // NOTE: caching the variables improves performance by 20% when serving
   // cached pages.
-  if ($cached = cache_get('variables', 'cache_bootstrap')) {
+  if ($cached = cache('bootstrap')->get('variables')) {
     $variables = $cached->data;
   }
   else {
@@ -914,7 +978,7 @@ function variable_initialize($conf = array()) {
     else {
       // Proceed with variable rebuild.
       $variables = array_map('unserialize', db_query('SELECT name, value FROM {variable}')->fetchAllKeyed());
-      cache_set('variables', $variables, 'cache_bootstrap');
+      cache('bootstrap')->set('variables', $variables);
       lock_release($name);
     }
   }
@@ -971,7 +1035,7 @@ function variable_set($name, $value) {
 
   db_merge('variable')->key(array('name' => $name))->fields(array('value' => serialize($value)))->execute();
 
-  cache_clear_all('variables', 'cache_bootstrap');
+  cache('bootstrap')->delete('variables');
 
   $conf[$name] = $value;
 }
@@ -995,7 +1059,7 @@ function variable_del($name) {
   db_delete('variable')
     ->condition('name', $name)
     ->execute();
-  cache_clear_all('variables', 'cache_bootstrap');
+  cache('bootstrap')->delete('variables');
 
   unset($conf[$name]);
 }
@@ -1024,7 +1088,7 @@ function drupal_page_get_cache($check_only = FALSE) {
   }
 
   if (drupal_page_is_cacheable()) {
-    $cache = cache_get($base_root . request_uri(), 'cache_page');
+    $cache = cache('page')->get($base_root . request_uri());
     if ($cache !== FALSE) {
       $cache_hit = TRUE;
     }
@@ -1391,10 +1455,11 @@ function drupal_unpack($obj, $field = 'data') {
  * The t() function serves two purposes. First, at run-time it translates
  * user-visible text into the appropriate language. Second, various mechanisms
  * that figure out what text needs to be translated work off t() -- the text
- * inside t() calls is added to the database of strings to be translated. So,
- * to enable a fully-translatable site, it is important that all human-readable
- * text that will be displayed on the site or sent to a user is passed through
- * the t() function, or a related function. See the
+ * inside t() calls is added to the database of strings to be translated.
+ * These strings are expected to be in English, so the first argument should
+ * always be in English. To enable a fully-translatable site, it is important
+ * that all human-readable text that will be displayed on the site or sent to
+ * a user is passed through the t() function, or a related function. See the
  * @link http://drupal.org/node/322729 Localization API @endlink pages for
  * more information, including recommendations on how to break up or not
  * break up strings for translation.
@@ -1425,15 +1490,7 @@ function drupal_unpack($obj, $field = 'data') {
  *   A string containing the English string to translate.
  * @param $args
  *   An associative array of replacements to make after translation.
- *   Occurrences in $string of any key in $args are replaced with the
- *   corresponding value, after sanitization. The sanitization function depends
- *   on the first character of the key:
- *   - !variable: Inserted as is. Use this for text that has already been
- *     sanitized.
- *   - @variable: Escaped to HTML using check_plain(). Use this for anything
- *     displayed on a page on the site.
- *   - %variable: Escaped as a placeholder for user-submitted content using
- *     drupal_placeholder(), which shows up as <em>emphasized</em> text.
+ *   See format_string().
  * @param $options
  *   An associative array of additional options, with the following elements:
  *   - 'langcode' (defaults to the current language): The language code to
@@ -1479,26 +1536,50 @@ function t($string, array $args = array(), array $options = array()) {
     return $string;
   }
   else {
-    // Transform arguments before inserting them.
-    foreach ($args as $key => $value) {
-      switch ($key[0]) {
-        case '@':
-          // Escaped only.
-          $args[$key] = check_plain($value);
-          break;
-
-        case '%':
-        default:
-          // Escaped and placeholder.
-          $args[$key] = drupal_placeholder($value);
-          break;
-
-        case '!':
-          // Pass-through.
-      }
-    }
-    return strtr($string, $args);
+    return format_string($string, $args);
   }
+}
+
+/**
+ * Replace placeholders with sanitized values in a string.
+ *
+ * @param $string
+ *   A string containing placeholders.
+ * @param $args
+ *   An associative array of replacements to make. Occurrences in $string of
+ *   any key in $args are replaced with the corresponding value, after
+ *   sanitization. The sanitization function depends on the first character of
+ *   the key:
+ *   - !variable: Inserted as is. Use this for text that has already been
+ *     sanitized.
+ *   - @variable: Escaped to HTML using check_plain(). Use this for anything
+ *     displayed on a page on the site.
+ *   - %variable: Escaped as a placeholder for user-submitted content using
+ *     drupal_placeholder(), which shows up as <em>emphasized</em> text.
+ *
+ * @see t()
+ * @ingroup sanitization
+ */
+function format_string($string, array $args = array()) {
+  // Transform arguments before inserting them.
+  foreach ($args as $key => $value) {
+    switch ($key[0]) {
+      case '@':
+        // Escaped only.
+        $args[$key] = check_plain($value);
+        break;
+
+      case '%':
+      default:
+        // Escaped and placeholder.
+        $args[$key] = drupal_placeholder($value);
+        break;
+
+      case '!':
+        // Pass-through.
+    }
+  }
+  return strtr($string, $args);
 }
 
 /**
@@ -1555,11 +1636,12 @@ function drupal_validate_utf8($text) {
 }
 
 /**
- * Since $_SERVER['REQUEST_URI'] is only available on Apache, we
- * generate an equivalent using other environment variables.
+ * Returns the equivalent of Apache's $_SERVER['REQUEST_URI'] variable.
+ *
+ * Because $_SERVER['REQUEST_URI'] is only available on Apache, we generate an
+ * equivalent using other environment variables.
  */
 function request_uri() {
-
   if (isset($_SERVER['REQUEST_URI'])) {
     $uri = $_SERVER['REQUEST_URI'];
   }
@@ -2401,6 +2483,34 @@ function drupal_maintenance_theme() {
 }
 
 /**
+ * Returns a simple 404 Not Found page.
+ *
+ * If fast 404 pages are enabled, and this is a matching page then print a
+ * simple 404 page and exit.
+ *
+ * This function is called from drupal_deliver_html_page() at the time when a
+ * a normal 404 page is generated, but it can also optionally be called directly
+ * from settings.php to prevent a Drupal bootstrap on these pages. See
+ * documentation in settings.php for the benefits and drawbacks of using this.
+ *
+ * Paths to dynamically-generated content, such as image styles, should also be
+ * accounted for in this function.
+ */
+function drupal_fast_404() {
+  $exclude_paths = variable_get('404_fast_paths_exclude', FALSE);
+  if ($exclude_paths && !preg_match($exclude_paths, $_GET['q'])) {
+    $fast_paths = variable_get('404_fast_paths', FALSE);
+    if ($fast_paths && preg_match($fast_paths, $_GET['q'])) {
+      drupal_add_http_header('Status', '404 Not Found');
+      $fast_404_html = variable_get('404_fast_html', '<html xmlns="http://www.w3.org/1999/xhtml"><head><title>404 Not Found</title></head><body><h1>Not Found</h1><p>The requested URL "@path" was not found on this server.</p></body></html>');
+      // Replace @path in the variable with the page path.
+      print strtr($fast_404_html, array('@path' => check_plain(request_uri())));
+      exit;
+    }
+  }
+}
+
+/**
  * Return TRUE if a Drupal installation is currently being attempted.
  */
 function drupal_installation_attempted() {
@@ -2419,7 +2529,11 @@ function drupal_installation_attempted() {
  * non-installation time, such as while installing the module from the the
  * module administration page.
  *
+<<<<<<< HEAD
  * Example useage:
+=======
+ * Example usage:
+>>>>>>> drupalorg
  * @code
  *   $t = get_t();
  *   $translated = $t('translate this');
@@ -2509,6 +2623,7 @@ function language_list($field = 'language') {
   $languages = &drupal_static(__FUNCTION__);
   // Init language list
   if (!isset($languages)) {
+    $default = language_default();
     if (drupal_multilingual() || module_exists('locale')) {
       $languages['language'] = db_query('SELECT * FROM {languages} ORDER BY weight ASC, name ASC')->fetchAllAssoc('language');
       // Users cannot uninstall the native English language. However, we allow
@@ -2520,8 +2635,13 @@ function language_list($field = 'language') {
     }
     else {
       // No locale module, so use the default language only.
-      $default = language_default();
       $languages['language'][$default->language] = $default;
+    }
+
+    // Initialize default property so callers have an easy reference and
+    // can save the same object without data loss.
+    foreach ($languages['language'] as $langcode => $language) {
+      $languages['language'][$langcode]->default = ($langcode == $default->language);
     }
   }
 
@@ -2542,14 +2662,28 @@ function language_list($field = 'language') {
 }
 
 /**
- * Default language used on the site
+ * Default language used on the site.
  *
- * @param $property
- *   Optional property of the language object to return
+ * @return
+ *   A language object.
  */
-function language_default($property = NULL) {
-  $language = variable_get('language_default', (object) array('language' => 'en', 'name' => 'English', 'native' => 'English', 'direction' => 0, 'enabled' => 1, 'plurals' => 0, 'formula' => '', 'domain' => '', 'prefix' => '', 'weight' => 0, 'javascript' => ''));
-  return $property ? $language->$property : $language;
+function language_default() {
+  return variable_get(
+    'language_default',
+    (object) array(
+      'language' => 'en',
+      'name' => 'English',
+      'native' => 'English',
+      'direction' => 0,
+      'enabled' => 1,
+      'plurals' => 0,
+      'formula' => '',
+      'domain' => '',
+      'prefix' => '',
+      'weight' => 0,
+      'javascript' => ''
+    )
+  );
 }
 
 /**
@@ -2748,7 +2882,11 @@ class SchemaCache extends DrupalCacheArray {
 
   public function __construct() {
     // Cache by request method.
+<<<<<<< HEAD
     parent::__construct('schema:runtime:' . $_SERVER['REQUEST_METHOD'] == 'GET', 'cache');
+=======
+    parent::__construct('schema:runtime:' . ($_SERVER['REQUEST_METHOD'] == 'GET'), 'cache');
+>>>>>>> drupalorg
   }
 
   protected function resolveCacheMiss($offset) {
@@ -2774,7 +2912,7 @@ function drupal_get_complete_schema($rebuild = FALSE) {
 
   if (empty($schema) || $rebuild) {
     // Try to load the schema from cache.
-    if (!$rebuild && $cached = cache_get('schema')) {
+    if (!$rebuild && $cached = cache()->get('schema')) {
       $schema = $cached->data;
     }
     // Otherwise, rebuild the schema cache.
@@ -2800,7 +2938,7 @@ function drupal_get_complete_schema($rebuild = FALSE) {
         // That would break modules which use $schema further down the line.
         $current = (array) module_invoke($module, 'schema');
         // Set 'module' and 'name' keys for each table, and remove descriptions,
-        // as they needlessly slow down cache_get() for every single request.
+        // as they needlessly slow down cache()->get() for every single request.
         _drupal_schema_initialize($current, $module);
         $schema = array_merge($schema, $current);
       }
@@ -2809,7 +2947,10 @@ function drupal_get_complete_schema($rebuild = FALSE) {
       // If the schema is empty, avoid saving it: some database engines require
       // the schema to perform queries, and this could lead to infinite loops.
       if (!empty($schema) && (drupal_get_bootstrap_phase() == DRUPAL_BOOTSTRAP_FULL)) {
-        cache_set('schema', $schema);
+        cache()->set('schema', $schema);
+      }
+      if ($rebuild) {
+        cache()->deletePrefix('schema:');
       }
       if ($rebuild) {
         cache_clear_all('schema:', 'cache', TRUE);
@@ -2883,7 +3024,7 @@ function _registry_check_code($type, $name = NULL) {
 
   if (!isset($lookup_cache)) {
     $lookup_cache = array();
-    if ($cache = cache_get('lookup_cache', 'cache_bootstrap')) {
+    if ($cache = cache('bootstrap')->get('lookup_cache')) {
       $lookup_cache = $cache->data;
     }
   }
@@ -2900,7 +3041,7 @@ function _registry_check_code($type, $name = NULL) {
   // changes to the lookup cache for this request.
   if ($type == REGISTRY_WRITE_LOOKUP_CACHE) {
     if ($cache_update_needed) {
-      cache_set('lookup_cache', $lookup_cache, 'cache_bootstrap');
+      cache('bootstrap')->set('lookup_cache', $lookup_cache);
     }
     return;
   }

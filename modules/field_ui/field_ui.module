@@ -17,7 +17,7 @@ function field_ui_help($path, $arg) {
       $output .= '<h3>' . t('Uses') . '</h3>';
       $output .= '<dl>';
       $output .= '<dt>' . t('Planning fields') . '</dt>';
-      $output .= '<dd>' . t('There are several decisions you will need to make before definining a field for content, comments, etc.:') . '<dl>';
+      $output .= '<dd>' . t('There are several decisions you will need to make before defining a field for content, comments, etc.:') . '<dl>';
       $output .= '<dt>' . t('What the field will be called') . '</dt>';
       $output .= '<dd>' . t('A field has a <em>label</em> (the name displayed in the user interface) and a <em>machine name</em> (the name used internally). The label can be changed after you create the field, if needed, but the machine name cannot be changed after you have created the field.') . '</li>';
       $output .= '<dt>' . t('What type of data the field will store') . '</dt>';
@@ -59,12 +59,6 @@ function field_ui_menu() {
     'type' => MENU_NORMAL_ITEM,
     'file' => 'field_ui.admin.inc',
   );
-
-  // Ensure the following is not executed until field_bundles is working and
-  // tables are updated. Needed to avoid errors on initial installation.
-  if (defined('MAINTENANCE_MODE')) {
-    return $items;
-  }
 
   // Create tabs for all possible bundles.
   foreach (entity_get_info() as $entity_type => $entity_info) {
@@ -144,7 +138,7 @@ function field_ui_menu() {
             'title' => 'Delete',
             'page callback' => 'drupal_get_form',
             'page arguments' => array('field_ui_field_delete_form', $field_position),
-            'type' => MENU_LOCAL_TASK,
+            'type' => MENU_VISIBLE_IN_BREADCRUMB,
             'weight' => 10,
             'file' => 'field_ui.admin.inc',
           ) + $access;

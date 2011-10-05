@@ -27,6 +27,7 @@ function locale_install() {
 }
 
 /**
+<<<<<<< HEAD
  * @addtogroup updates-6.x-to-7.x
  * @{
  */
@@ -138,6 +139,8 @@ function locale_update_7003() {
  */
 
 /**
+=======
+>>>>>>> drupalorg
  * Implements hook_uninstall().
  */
 function locale_uninstall() {
@@ -288,13 +291,6 @@ function locale_schema() {
         'size' => 'big',
         'description' => 'Drupal path in case of online discovered translations or file path in case of imported strings.',
       ),
-      'textgroup' => array(
-        'type' => 'varchar',
-        'length' => 255,
-        'not null' => TRUE,
-        'default' => 'default',
-        'description' => 'A module defined group of translations, see hook_locale().',
-      ),
       'source' => array(
         'type' => 'text',
         'mysql_type' => 'blob',
@@ -373,4 +369,3 @@ function locale_schema() {
 
   return $schema;
 }
-

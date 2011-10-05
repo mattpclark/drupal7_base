@@ -63,6 +63,13 @@ states.Dependent.comparisons = {
   'Function': function (reference, value) {
     // The "reference" variable is a comparison function.
     return reference(value);
+  },
+  'Number': function (reference, value) {
+    // If "reference" is a number and "value" is a string, then cast reference
+    // as a string before applying the strict comparison in compare(). Otherwise
+    // numeric keys in the form's #states array fail to match string values
+    // returned from jQuery's val().
+    return (value.constructor.name === 'String') ? compare(String(reference), value) : compare(reference, value);
   }
 };
 
@@ -363,7 +370,11 @@ states.State.prototype = {
   $(document).bind('state:required', function(e) {
     if (e.trigger) {
       if (e.value) {
+<<<<<<< HEAD
         $(e.target).closest('.form-item, .form-wrapper').find('label').append('<span class="form-required">*</span>');
+=======
+        $(e.target).closest('.form-item, .form-wrapper').find('label').append('<abbr class="form-required" title="' + Drupal.t('This field is required.') + '">*</abbr>');
+>>>>>>> drupalorg
       }
       else {
         $(e.target).closest('.form-item, .form-wrapper').find('label .form-required').remove();

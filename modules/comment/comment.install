@@ -80,6 +80,7 @@ function comment_modules_enabled($modules) {
 }
 
 /**
+<<<<<<< HEAD
  * Implements hook_update_dependencies().
  */
 function comment_update_dependencies() {
@@ -371,6 +372,8 @@ function comment_update_7008() {
  */
 
 /**
+=======
+>>>>>>> drupalorg
  * Implements hook_schema().
  */
 function comment_schema() {
@@ -438,7 +441,7 @@ function comment_schema() {
         'type' => 'varchar',
         'length' => 255,
         'not null' => TRUE,
-        'description' => "The vancode representation of the comment's place in a thread.",
+        'description' => "The alphadecimal representation of the comment's place in a thread, consisting of a base 36 string prefixed by an integer indicating its length.",
       ),
       'name' => array(
         'type' => 'varchar',
@@ -506,7 +509,7 @@ function comment_schema() {
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
-        'description' => 'The Unix timestamp of the last comment that was posted within this node, from {comment}.timestamp.',
+        'description' => 'The Unix timestamp of the last comment that was posted within this node, from {comment}.changed.',
       ),
       'last_comment_name' => array(
         'type' => 'varchar',

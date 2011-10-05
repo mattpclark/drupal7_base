@@ -11,19 +11,6 @@
  */
 
 /**
- * Allows modules to define their own text groups that can be translated.
- *
- * @param $op
- *   Type of operation. Currently, only supports 'groups'.
- */
-function hook_locale($op = 'groups') {
-  switch ($op) {
-    case 'groups':
-      return array('custom' => t('Custom'));
-  }
-}
-
-/**
  * Allows modules to act after language initialization has been performed.
  *
  * This is primarily needed to provide translation for configuration variables
@@ -168,19 +155,6 @@ function hook_language_negotiation_info_alter(array &$language_providers) {
 }
 
 /**
- * Allow modules to react to language settings changes.
- *
- * Every module needing to act when the number of enabled languages changes
- * should implement this. This is an "internal" hook and should not be invoked
- * elsewhere. The typical implementation would trigger some kind of rebuilding,
- * this way system components could properly react to the change of the enabled
- * languages number.
- */
-function hook_multilingual_settings_changed() {
-  field_info_cache_clear();
-}
-
-/**
  * Perform alterations on the language fallback candidates.
  *
  * @param $fallback_candidates
@@ -189,6 +163,53 @@ function hook_multilingual_settings_changed() {
  */
 function hook_language_fallback_candidates_alter(array &$fallback_candidates) {
   $fallback_candidates = array_reverse($fallback_candidates);
+}
+
+ /**
+ * React to a language about to be added or updated in the system.
+ *
+ * @param $language
+ *   A language object.
+ */
+function hook_locale_language_presave($language) {
+  if ($language->default) {
+    // React to a new default language.
+    example_new_default_language($language);
+  }
+}
+
+/**
+ * React to a language that was just added to the system.
+ *
+ * @param $language
+ *   A language object.
+ */
+function hook_locale_language_insert($language) {
+  example_refresh_permissions();
+}
+
+/**
+ * React to a language that was just updated in the system.
+ *
+ * @param $language
+ *   A language object.
+ */
+function hook_locale_language_update($language) {
+  example_refresh_permissions();
+}
+
+/**
+ * Allow modules to react before the deletion of a language.
+ *
+ * @param $language
+ *   The language object of the language that is about to be deleted.
+ */
+function hook_locale_language_delete($language) {
+  // On nodes with this language, unset the language
+  db_update('node')
+    ->fields(array('language' => ''))
+    ->condition('language', $language->language)
+    ->execute();
 }
 
 /**

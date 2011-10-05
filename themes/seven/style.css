@@ -100,7 +100,6 @@ acronym {
 }
 ul,
 .block ul,
-.item-list ul,
 .item-list ul {
   list-style-type: disc;
   list-style-image: none;
@@ -599,10 +598,8 @@ div.teaser-checkbox .form-item,
   padding: 0;
 }
 .form-item label.option {
-  text-transform: none;
-}
-.form-item label.option {
   font-size: 0.923em;
+  text-transform: none;
 }
 .form-item label.option input {
   vertical-align: middle;
@@ -672,6 +669,18 @@ a.button:active {
   text-decoration: none;
   color: #5a5a5a;
 }
+<<<<<<< HEAD
+=======
+.node-form input#edit-submit,
+.node-form input#edit-submit-1 {
+  border: 1px solid #8eB7cd;
+  border-left-color: #8eB7cd;
+  border-right-color: #8eB7cd;
+  border-bottom-color: #7691a2;
+  background: url(images/buttons.png) 0 -40px repeat-x;
+  color: #133B54;
+}
+>>>>>>> drupalorg
 input.form-submit:active {
   background: #666;
   color: #fff;

@@ -2,7 +2,7 @@ name = Testing
 description = Provides a framework for unit and functional testing.
 package = Core
 version = VERSION
-core = 7.x
+core = 8.x
 files[] = simpletest.test
 files[] = drupal_web_test_case.php
 configure = admin/config/development/testing/settings
@@ -38,6 +38,7 @@ files[] = tests/unicode.test
 files[] = tests/update.test
 files[] = tests/xmlrpc.test
 files[] = tests/upgrade/upgrade.test
+<<<<<<< HEAD
 files[] = tests/upgrade/upgrade.comment.test
 files[] = tests/upgrade/upgrade.filter.test
 files[] = tests/upgrade/upgrade.forum.test
@@ -48,3 +49,7 @@ files[] = tests/upgrade/upgrade.taxonomy.test
 files[] = tests/upgrade/upgrade.translatable.test
 files[] = tests/upgrade/upgrade.upload.test
 files[] = tests/upgrade/upgrade.user.test
+=======
+files[] = tests/upgrade/upgrade_bare.test
+files[] = tests/upgrade/upgrade_filled.test
+>>>>>>> drupalorg

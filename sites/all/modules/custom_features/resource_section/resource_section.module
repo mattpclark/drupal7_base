@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Resource Section feature.
+ */
+
+include_once('resource_section.features.inc');

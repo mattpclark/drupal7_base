@@ -1,0 +1,129 @@
+<?php
+
+/**
+ * @file
+ * Development related functions.
+ */
+
+
+/**
+ * Generate profile2
+ */
+function profile2_generate_form($form, &$form_state) {
+  $types = profile2_get_types(); 
+  foreach( $types as $id => $type) {
+    $types[$id] = $type->label;
+  }
+
+  $form['profile2_types'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Profile types'),
+    '#description' => t('Select profile types to create profile from. If no types are selected, profile2 will be generated for all types.'),
+    '#options' => $types,
+  );
+  //get all user.
+  $users = user_load_multiple(FALSE);
+  //unset anonymous
+  unset($users[0]);
+  
+  $options = array();
+  foreach ($users as $uid => $user) {
+    $options[$uid] = $user->name;
+  }
+  
+  $member_types = array('all' => 'All', 'select' => 'Selecte form list');
+  
+  $form['profile2_member'] = array(
+    '#type' => 'select',
+    '#title' => t('Member who is profile is generated'),
+    '#options' => $member_types,
+  );
+ 
+  $form['profile2_member_select'] = array(
+    '#type' => 'select',
+    '#multiple' => TRUE,
+    '#title' => t('How many profile would you like to generate of each type?'),
+    '#default_value' => -1,
+    '#options' => $options,
+    '#states' => array(
+       '!visible' => array('select[name="profile2_member"]' => array('value' => 'all')),
+    ),
+    '#size' => 10,
+  );
+  $form['profile2_kill'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Kill all existing profile first.'),
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Generate'),
+  );
+  return $form;
+}
+
+function profile2_generate_form_submit($form, &$form_state) {
+  
+  $user_ids = array();
+  if ($form_state['values']['profile2_member'] == 'all') {
+    // generate profile2 for all user.
+    $users = user_load_multiple(FALSE);
+    //unset anonymous
+    unset($users[0]);
+    $user_ids = array_keys($users);
+  } else {
+    $user_ids = $form_state['values']['profile2_member_select'];
+  }
+  
+  $types = $form_state['values']['profile2_types'];
+  $kill = $form_state['values']['profile2_kill'];
+  
+  if (count($user_ids) > 0) {
+    $types = array_keys(array_filter($types));
+    $pids = profile2_generate_profile($user_ids, $types, $kill);
+    drupal_set_message(t("Generated %count profile.", array('%count' => count($pids))));
+  }
+}
+
+/**
+ * The main API function for creating profile2.
+ *
+ * @param string $form_state
+ * @return void
+ */
+function profile2_generate_profile($user_ids, $types, $kill) {
+  if ($kill) {
+    // get all profile2 and delete this.
+    $profiles = profile2_load_multiple(FALSE);
+    $pids = array_keys($profiles);
+    
+    if ($pids) {
+      // delete all profile first.
+      profile2_delete_multiple($pids);
+    }
+  }
+  
+  // get all profile2 types.
+  $new_pids = array();
+  
+  foreach ($types as $type) {
+    foreach ($user_ids as $uid) {
+      $profile2 = new Profile( 
+        array(
+          'type' => $type,
+          'uid' => $uid,
+        )
+      );
+      // Populate all core fields on behalf of field.module
+      module_load_include('inc', 'devel_generate', 'devel_generate.fields');
+      module_load_include('inc', 'devel_generate', 'devel_generate');
+      // add language for profile2 object.
+      // @see devel_generate_fields      
+      $profile2->language = 'und';
+      devel_generate_fields($profile2, 'profile2', $profile2->type);
+      $new_pids[] = profile2_save($profile2);      
+    }
+  }
+  
+  return $new_pids;
+}

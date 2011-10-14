@@ -757,3 +757,20 @@ function profile2_user_get_properties($account, array $options, $name) {
   return $profile ? $profile : NULL;
 }
 
+/**
+ * Implement hook_menu().
+ */
+function profile2_menu() {
+  $items = array();
+// menu general profile2.
+    if (module_exists('devel')) {
+      $items['admin/config/development/generate/profile2'] = array(
+        'title' => 'Generate Profile2',
+        'access arguments' => array('administer profile2'),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('profile2_generate_form'),
+        'file' => 'profile2.devel.inc',
+      );
+    }
+    return $items;
+}
